@@ -18,6 +18,19 @@ export default function vueEyeinTranslation(options = {}) {
     return {
         name: `vite-plugin-vue-eyein-translation`,
         enforce: `pre`,
+        config(config) {
+            if (!config.server) {
+                config.server = {};
+            }
+            if (!config.server.watch) {
+                config.server.watch = {};
+            }
+            if (!config.server.watch.ignored) {
+                config.server.watch.ignored = [];
+            }
+
+            config.server.watch.ignored.push(`**/src/assets/locales/**`)
+        },
         configResolved(resolvedConfig) {
             config = resolvedConfig
         },
