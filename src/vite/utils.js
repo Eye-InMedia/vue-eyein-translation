@@ -1,4 +1,4 @@
- export function createTranslationId(str) {
+export function createTranslationId(str) {
     const cyrb64 = (str, seed = 0) => {
         let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
         for (let i = 0, ch; i < str.length; i++) {
@@ -21,8 +21,9 @@
     return cyrb64Hash(str);
 }
 
+let timer;
+
 export function debounce(func, timeout = 1000) {
-    let timer;
     return (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => {
