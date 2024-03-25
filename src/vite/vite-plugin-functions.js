@@ -57,9 +57,10 @@ export function saveLocales(options, purgeOldTranslations = false) {
     }
 
     let i = 0;
+    fs.rmSync(`src/assets/locales/add`, {recursive: true, force: true});
     for (const additionalLocaleDir of options.additionalLocalesDirs) {
         i++;
-        fs.cpSync(additionalLocaleDir, `src/assets/locales/add/${i}`, {recursive: true});
+        fs.cpSync(additionalLocaleDir, `src/assets/locales/add/${i}`, {recursive: true, force: true});
     }
 }
 
