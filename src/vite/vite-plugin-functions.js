@@ -161,27 +161,32 @@ export function transformSourceCode(options, fileId, src) {
 
 
 function transformTranslationComponents(relativePath, src, options) {
-    const regex = /<t( [^>]*)*>([^<>]+?)<\/t>/d;
-    let matches = [];
-    while (matches = regex.exec(src)) {
-        const line = findLineNumber(matches.indices[2], src);
+    const originalSrc = src;
+
+    let allMatches = src.matchAll(/<t( [^>]*)*>([^<>]+?)<\/t>/gd);
+    for (const matches of allMatches) {
+        const fullMatch = matches[0];
+        const propsStr = matches[1] ? matches[1] : ``;
         const srcStr = matches[2];
+        const line = findLineNumber(matches.indices[2], originalSrc);
         const context = `<t> tag at (${relativePath}:${line})`;
         const translationObjectString = createTranslationObjectString(srcStr, context, options);
-        src = src.replace(regex, `<t$1 :value="${translationObjectString}"></t>`);
+        src = src.replace(fullMatch, `<t${propsStr} :value="${translationObjectString}"></t>`);
     }
 
     return src;
 }
 
 function transformTranslationAttributes(relativePath, src, options) {
-    const regex = /<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=['"](.+?)['"])?).*?>/dg;
-    let matches = [];
-    while (matches = regex.exec(src)) {
-        let tag = matches[0];
+    const originalSrc = src;
+
+    let allMatches = src.matchAll(/<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=['"](.+?)['"])?).*?>/dg);
+    for (const matches of allMatches) {
+        const fullMatch = matches[0];
         const tagName = matches[1];
+        const fullDirective = matches[2];
         const directive = matches[3];
-        const line = findLineNumber(matches.indices[3], src);
+        const line = findLineNumber(matches.indices[3], originalSrc);
 
         const tmp = directive.split(`:`);
         let attributes = [];
@@ -205,14 +210,13 @@ function transformTranslationAttributes(relativePath, src, options) {
             const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
 
             const attributeRegex = new RegExp(`\\s+${attribute}=['"](.+?)['"]`);
-            const result = tag.match(attributeRegex);
+            const result = fullMatch.match(attributeRegex);
             if (result && result.length >= 2) {
                 const srcStr = result[1];
                 const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
                 const filtersTxt = filters.length > 0 ? `.${filters.join(`.`)}` : ``;
-                const newTag = tag.replace(matches[2], ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
-                src = src.replace(tag, newTag);
-                tag = newTag;
+                const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
+                src = src.replace(fullMatch, newTag);
             }
         }
     }
@@ -221,10 +225,12 @@ function transformTranslationAttributes(relativePath, src, options) {
 }
 
 function transformJSTranslation(relativePath, src, options) {
-    const regex = /createTranslation\(`(.+?)`(?:, (.+?))?\)/d;
-    let matches = [];
-    while (matches = regex.exec(src)) {
-        const line = findLineNumber(matches.indices[1], src);
+    const originalSrc = src;
+
+    let allMatches = src.matchAll(/createTranslation\(`(.+?)`(?:, (.+?))?\)/dg);
+    for (const matches of allMatches) {
+        const fullMatch = matches[0];
+        const line = findLineNumber(matches.indices[1], originalSrc);
         const srcStr = matches[1];
         const context = `JS template literal at (${relativePath}:${line})`;
 
@@ -234,7 +240,7 @@ function transformJSTranslation(relativePath, src, options) {
         }
 
         const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
-        src = src.replace(regex, `t(${translationObjectString})`);
+        src = src.replace(fullMatch, `t(${translationObjectString})`);
     }
 
     return src;
