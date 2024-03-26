@@ -4,7 +4,7 @@ import {createTranslationId, findLineNumber} from "./utils";
 const translations = {};
 const additionalTranslations = {};
 
-export function loadLocales(options) {
+export async function loadLocales(options) {
     if (!fs.existsSync(`src/assets/locales`)) {
         console.log(`Creating locales directory: src/assets/locales...`);
         fs.mkdirSync(`src/assets/locales`, {recursive: true});
@@ -36,18 +36,28 @@ export function loadLocales(options) {
     }
 }
 
-export function saveLocales(options, buildEnd = false) {
+export async function saveLocales(options, buildEnd = false) {
     console.log(`Saving translation files...`);
 
     const inlineLocales = options.inlineLocales.split(`||`);
     const localesWithFiles = options.locales.filter(l => inlineLocales.indexOf(l) === -1);
 
     for (const locale of localesWithFiles) {
-        if (buildEnd && options.purgeOldTranslations) {
-            for (const translationId in translations[locale]) {
-                if (typeof translations[locale][translationId].last_update !== `object`) {
-                    console.warn(`Deleting removed translation ${translationId}: ${translations[locale][translationId].source}`)
-                    delete translations[locale][translationId];
+        if (buildEnd) {
+            if (options.purgeOldTranslations) {
+                for (const translationId in translations[locale]) {
+                    if (typeof translations[locale][translationId].last_update !== `object`) {
+                        console.warn(`Deleting removed translation ${translationId}: ${translations[locale][translationId].source}`)
+                        delete translations[locale][translationId];
+                    }
+                }
+            }
+
+            if (options.autoTranslate.locales?.includes(locale) && options.autoTranslate.translationFunction) {
+                try {
+                    await autoTranslateLocale(options, locale);
+                } catch (e) {
+                    console.error(e);
                 }
             }
         }
@@ -61,6 +71,52 @@ export function saveLocales(options, buildEnd = false) {
     for (const additionalLocaleDir of options.additionalLocalesDirs) {
         i++;
         fs.cpSync(additionalLocaleDir, `src/assets/locales/add/${i}`, {recursive: true, force: true});
+    }
+}
+
+async function autoTranslateLocale(options, locale) {
+    const sourceLocale = options.inlineLocales.split(`||`).shift();
+
+    let textsToTranslate = [];
+    let translationsInfo = [];
+
+    for (const translationId in translations[locale]) {
+        if (!translations[locale][translationId].target) {
+            let translationSource = translations[locale][translationId].source;
+            let info = {
+                id: translationId,
+                data: {}
+            }
+
+            const matches = translationSource.match(/\{.+?}/g);
+            if (matches) {
+                for (const [i, match] of matches.entries()) {
+                    info.data[`{#${i}}`] = match;
+
+                    translationSource = translationSource.replace(match, `{#${i}}`);
+                }
+            }
+
+            textsToTranslate.push(translationSource);
+            translationsInfo.push(info);
+        }
+    }
+
+    if (textsToTranslate.length === 0) {
+        return;
+    }
+
+    console.log(`Translating automatically ${textsToTranslate.length} texts for ${locale} locale...`);
+
+    const translatedTexts = await options.autoTranslate.translationFunction(sourceLocale, locale, textsToTranslate);
+
+    for (let i = 0; i < translationsInfo.length; i++) {
+        const info = translationsInfo[i];
+        let translatedText = translatedTexts[i];
+        for (const placeholder in info.data) {
+            translatedText = translatedText.replace(placeholder, info.data[placeholder]);
+        }
+        translations[locale][info.id].target = translatedText;
     }
 }
 

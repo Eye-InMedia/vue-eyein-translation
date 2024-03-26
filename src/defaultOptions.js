@@ -3,5 +3,6 @@ export default {
     inlineLocales: `en-US`,
     additionalLocalesDirs: [],
     purgeOldTranslations: true,
-    warnMissingTranslations: true
+    warnMissingTranslations: true,
+    autoTranslate: {}
 }
