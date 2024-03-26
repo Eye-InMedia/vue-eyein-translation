@@ -1,5 +1,5 @@
 import fs from "fs";
-import {createTranslationId, debounce, findLineNumber} from "./utils";
+import {createTranslationId, findLineNumber} from "./utils";
 
 const translations = {};
 const additionalTranslations = {};
@@ -84,7 +84,7 @@ export function handleHotUpdate(options, file, server, modules, timestamp) {
     return [];
 }
 
-export function transformSourceCode(options, fileId, src, saveAfterEachTransform = false) {
+export function transformSourceCode(options, fileId, src) {
     if (!/\.vue$/.test(fileId) || fileId.includes(`/node_modules/`)) {
         return null;
     }
@@ -97,12 +97,6 @@ export function transformSourceCode(options, fileId, src, saveAfterEachTransform
     src = transformTranslationComponents(relativePath, src, options);
     src = transformTranslationAttributes(relativePath, src, options);
     src = transformJSTranslation(relativePath, src, options);
-
-    if (saveAfterEachTransform) {
-        debounce(() => {
-            saveLocales(options);
-        })();
-    }
 
     return {
         code: src
