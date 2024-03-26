@@ -36,14 +36,14 @@ export function loadLocales(options) {
     }
 }
 
-export function saveLocales(options, purgeOldTranslations = false) {
+export function saveLocales(options, buildEnd = false) {
     console.log(`Saving translation files...`);
 
     const inlineLocales = options.inlineLocales.split(`||`);
     const localesWithFiles = options.locales.filter(l => inlineLocales.indexOf(l) === -1);
 
     for (const locale of localesWithFiles) {
-        if (purgeOldTranslations) {
+        if (buildEnd && options.purgeOldTranslations) {
             for (const translationId in translations[locale]) {
                 if (typeof translations[locale][translationId].last_update !== `object`) {
                     console.warn(`Deleting removed translation ${translationId}: ${translations[locale][translationId].source}`)
@@ -258,7 +258,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
             translations[locale][translationId].last_update = new Date();
         }
 
-        if (!translationObject[locale]) {
+        if (options.warnMissingTranslations && !translationObject[locale]) {
             console.warn(`Missing translation ${locale} ${translationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
         }
 
