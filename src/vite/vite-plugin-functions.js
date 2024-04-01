@@ -254,6 +254,7 @@ function transformJSTranslation(relativePath, src, options) {
     const originalSrc = src;
 
     let allMatches = src.matchAll(/createTranslation\(`(.+?)`(?:, (.+?))?\)/dg);
+    let hasMatches = false;
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const line = findLineNumber(matches.indices[1], originalSrc);
@@ -267,6 +268,12 @@ function transformJSTranslation(relativePath, src, options) {
 
         const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
         src = src.replace(fullMatch, `tr(${translationObjectString})`);
+        hasMatches = true;
+    }
+
+
+    if (hasMatches) {
+        src = src.replace(/(const|let)\s+createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/g, `const tr = inject('tr');\nconst locale = inject('locale');`);
     }
 
     return src;
