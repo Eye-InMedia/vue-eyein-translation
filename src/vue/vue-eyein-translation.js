@@ -48,18 +48,22 @@ export function mountedUpdated(app, options) {
 
 export function getTranslationFunc(options) {
     return (value, data = null, locale = null) => {
-        if (!locale) {
-            locale = getLocaleFunc(options)();
+        let l = locale;
+
+        if (!l) {
+            l = getLocaleFunc(options)();
+        } else if (typeof locale === `object`) {
+            l = locale.value;
         }
 
-        const shortLocale = locale.split(`-`).shift();
+        const shortLocale = l.split(`-`).shift();
         let result;
-        if (value.hasOwnProperty(locale) && value[locale]) {
+        if (value.hasOwnProperty(l) && value[l]) {
             // case 1: exact matching inline locale (ex: en-US)
-            result = value[locale];
-        } else if (value.id && translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id].target) {
+            result = value[l];
+        } else if (value.id && translations.hasOwnProperty(l) && translations[l].hasOwnProperty(value.id) && translations[l][value.id].target) {
             // case 2: exact matching locale in external file
-            result = translations[locale][value.id].target;
+            result = translations[l][value.id].target;
         } else if (value.hasOwnProperty(shortLocale) && value[shortLocale]) {
             // case 3: partial matching locale (ex: fr-CA matches fr translation)
             result = value[shortLocale];
@@ -76,7 +80,7 @@ export function getTranslationFunc(options) {
         }
 
         // Pluralization
-        result = pluralize(result, data, locale);
+        result = pluralize(result, data, l);
 
         // Data binding
         for (const key in data) {
@@ -87,7 +91,7 @@ export function getTranslationFunc(options) {
                 const filters = matches[1].split(`|`);
                 filters.shift();
                 for (const filter of filters) {
-                    transformedValue = applyFilter(filter, transformedValue, locale, translations[locale]);
+                    transformedValue = applyFilter(filter, transformedValue, l, translations[l]);
                 }
             }
             result = result.replace(regex, transformedValue);
