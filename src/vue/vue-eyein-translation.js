@@ -187,7 +187,7 @@ export function getLocaleFunc(options) {
 
 export function getLocaleTranslationsFunc(options) {
     return function() {
-        return translations[options.localeState.data]
+        return translations[options.localeState.value]
     }
 }
 
