@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import SimpleMarkdownParser from "../helpers/SimpleMarkdownParser";
+import SimpleMarkdownParser from "../../helpers/SimpleMarkdownParser.js";
 import {applyFilter, getAllFilters} from "../filters.js";
 
 const props = {

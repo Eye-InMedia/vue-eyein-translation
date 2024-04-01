@@ -173,11 +173,11 @@ export function getLocalesFunc(options) {
 
 export function getLocaleFunc(options) {
     return function() {
-        if (!options.localeState.data) {
-            options.localeState.data = localStorage.getItem(`locale`) || navigator.language || options.locales[0];
+        if (!options.localeState.value) {
+            options.localeState.value = localStorage.getItem(`locale`) || navigator.language || options.locales[0];
         }
 
-        return options.localeState.data
+        return options.localeState.value
     }
 }
 

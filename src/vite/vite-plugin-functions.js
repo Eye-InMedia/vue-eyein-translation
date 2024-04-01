@@ -1,13 +1,22 @@
 import fs from "fs";
-import {createTranslationId, findLineNumber} from "./utils";
+import {createTranslationId, findLineNumber} from "../helpers/utils.js";
+import path from "path";
 
 const translations = {};
 const additionalTranslations = {};
+const rootDir = process.cwd().replace(/\\/g, `/`);
+
+export async function updateViteConfig(options, config) {
+    config.server ||= {};
+    config.server.watch ||= {};
+    config.server.watch.ignored ||= [];
+    config.server.watch.ignored.push(`**/${options.localesDir}/**`);
+}
 
 export async function loadLocales(options) {
-    if (!fs.existsSync(`src/assets/locales`)) {
-        console.log(`Creating locales directory: src/assets/locales...`);
-        fs.mkdirSync(`src/assets/locales`, {recursive: true});
+    if (!fs.existsSync(path.join(rootDir, options.localesDir))) {
+        console.log(`Creating locales directory: ${options.localesDir}...`);
+        fs.mkdirSync(path.join(rootDir, options.localesDir), {recursive: true});
     }
 
     const inlineLocales = options.inlineLocales.split(`||`);
@@ -17,7 +26,7 @@ export async function loadLocales(options) {
         additionalTranslations[locale] = {};
 
         if (!inlineLocales.includes(locale)) {
-            const localePath = `src/assets/locales/${locale}.json`;
+            const localePath = path.join(rootDir, options.localesDir, `${locale}.json`);
             if (!fs.existsSync(localePath)) {
                 console.log(`Creating locale file: ${localePath}...`);
                 fs.writeFileSync(localePath, `{}`, {encoding: `utf-8`});
@@ -27,7 +36,7 @@ export async function loadLocales(options) {
         }
 
         for (const additionalDir of options.additionalLocalesDirs) {
-            const additionalLocalePath = `${additionalDir}/${locale}.json`;
+            const additionalLocalePath = path.join(rootDir, additionalDir, `${locale}.json`);
 
             if (fs.existsSync(additionalLocalePath)) {
                 additionalTranslations[locale] = JSON.parse(fs.readFileSync(additionalLocalePath, {encoding: `utf-8`}));
@@ -62,15 +71,15 @@ export async function saveLocales(options, buildEnd = false) {
             }
         }
 
-        const localePath = `src/assets/locales/${locale}.json`;
+        const localePath = path.join(rootDir, options.localesDir, `${locale}.json`);
         fs.writeFileSync(localePath, JSON.stringify(translations[locale], null, `  `), {encoding: `utf-8`});
     }
 
     let i = 0;
-    fs.rmSync(`src/assets/locales/add`, {recursive: true, force: true});
+    fs.rmSync(path.join(rootDir, options.localesDir, `add`), {recursive: true, force: true});
     for (const additionalLocaleDir of options.additionalLocalesDirs) {
         i++;
-        fs.cpSync(additionalLocaleDir, `src/assets/locales/add/${i}`, {recursive: true, force: true});
+        fs.cpSync(path.join(rootDir, additionalLocaleDir), path.join(rootDir, options.localesDir, `add/${i}`), {recursive: true, force: true});
     }
 }
 
@@ -120,8 +129,21 @@ async function autoTranslateLocale(options, locale) {
     }
 }
 
+function testFileId(file) {
+    if (!/\.vue$/.test(file)) {
+        return false;
+    }
+
+    if (file.includes(`/node_modules/`) || file.includes(`/t.vue`) || file.includes(`/select-locale.vue`)) {
+        return false;
+    }
+
+    return true;
+}
+
+
 export function handleHotUpdate(options, file, server, modules, timestamp) {
-    if (!/\.vue$/.test(file) || file.includes(`/node_modules/`)) {
+    if (!testFileId(file)) {
         return null;
     }
 
@@ -141,11 +163,11 @@ export function handleHotUpdate(options, file, server, modules, timestamp) {
 }
 
 export function transformSourceCode(options, fileId, src) {
-    if (!/\.vue$/.test(fileId) || fileId.includes(`/node_modules/`)) {
+    if (!testFileId(fileId)) {
         return null;
     }
 
-    const relativePath = fileId.replace(import.meta.dirname.replace(/\\/g, `/`), ``);
+    const relativePath = fileId.replace(rootDir, ``);
 
     // ignore comments
     src = src.replace(/<!--.+?-->/g, ` `);
@@ -239,14 +261,14 @@ function transformJSTranslation(relativePath, src, options) {
             dataStr = matches[2];
         }
 
-        const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
+        const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr, true);
         src = src.replace(fullMatch, `t(${translationObjectString})`);
     }
 
     return src;
 }
 
-function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
+function createTranslationObjectString(srcStr, context, options, dataStr = ``, insideJs = false) {
     let src = srcStr;
 
     // Custom id
@@ -330,7 +352,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
         json = json.replace(/^\{/g, `{data: ${dataStr},`);
     }
 
-    json = json.replace(/^\{/g, `{id: \`${translationId}\`, locale: this.locale,`);
+    json = json.replace(/^\{/g, `{id: '${translationId}', locale: ${insideJs ? `this.` : ``}locale,`);
 
     return json;
 }

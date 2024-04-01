@@ -84,7 +84,7 @@ export default {
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .select-locale {
     position: relative;
     color: black;

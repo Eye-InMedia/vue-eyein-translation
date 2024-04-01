@@ -30,15 +30,17 @@ const vueEyeinTranslation = {
             getSSRProps: getSSRProps(app, options)
         });
 
-        options.localeState = app.observable({
-            data: null
-        });
+        if (!options.localeState) {
+            options.localeState = app.observable({
+                value: null
+            });
+        }
 
         const locale = getLocaleFunc(options)();
         loadLocale(locale, options);
 
         if (app.config?.globalProperties) {
-            app.config.globalProperties.locale = options.localeState.data;
+            app.config.globalProperties.locale = options.localeState.value;
 
             app.config.globalProperties.t = getTranslationFunc(options);
 
@@ -56,7 +58,7 @@ const vueEyeinTranslation = {
             app.provide(`setLocale`, setLocaleFunc(options));
             app.provide(`createTranslation`, createTranslationFunc(options));
         } else {
-            app.prototype.locale = options.localeState.data;
+            app.prototype.locale = options.localeState.value;
 
             app.prototype.t = getTranslationFunc(options);
 
