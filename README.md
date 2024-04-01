@@ -157,7 +157,7 @@ export default {
         },
         mounted() {
             // javascript usage
-            console.log(this.t(this.jsTranslationObject));
+            console.log(this.tr(this.jsTranslationObject));
         }
     }
 </script>
@@ -165,7 +165,7 @@ export default {
 
 ### Available plugin methods
 
-- `t(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
+- `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
 - `getLocales()`: Returns the list of available locales
 - `getLocale()`: Returns the current locale in use
 - `getLocaleTranslations()`: Return the content of the translation file for current locale
@@ -290,7 +290,7 @@ createTranslation(`Hello {w}`, {w: world});
 - Translation object:
 ```js
 let translationFromDatabase = {en: `Hello {w}`};
-console.log(this.t(translationFromDatabase, {w: world}));
+console.log(this.tr(translationFromDatabase, {w: world}));
 ```
 
 

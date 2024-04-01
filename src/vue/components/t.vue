@@ -43,7 +43,7 @@ export default {
             const locale = this.getLocale();
             const localeOptions = this.getLocaleTranslations();
 
-            let result = this.t(this.value, this.d, locale);
+            let result = this.tr(this.value, this.d, locale);
 
             for (const filter of filters) {
                 if (this[filter]) {

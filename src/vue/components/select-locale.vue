@@ -86,6 +86,7 @@ export default {
 
 <style scoped>
 .select-locale {
+    display: inline-block;
     position: relative;
     color: black;
 

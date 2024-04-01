@@ -176,6 +176,8 @@ export function transformSourceCode(options, fileId, src) {
     src = transformTranslationAttributes(relativePath, src, options);
     src = transformJSTranslation(relativePath, src, options);
 
+    console.log(src);
+
     return {
         code: src
     };
@@ -261,14 +263,14 @@ function transformJSTranslation(relativePath, src, options) {
             dataStr = matches[2];
         }
 
-        const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr, true);
-        src = src.replace(fullMatch, `t(${translationObjectString})`);
+        const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
+        src = src.replace(fullMatch, `tr(${translationObjectString})`);
     }
 
     return src;
 }
 
-function createTranslationObjectString(srcStr, context, options, dataStr = ``, insideJs = false) {
+function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
     let src = srcStr;
 
     // Custom id
@@ -352,7 +354,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, i
         json = json.replace(/^\{/g, `{data: ${dataStr},`);
     }
 
-    json = json.replace(/^\{/g, `{id: '${translationId}', locale: ${insideJs ? `this.` : ``}locale,`);
+    json = json.replace(/^\{/g, `{id: '${translationId}', locale: locale,`);
 
     return json;
 }

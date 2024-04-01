@@ -20,8 +20,8 @@
         "translation"
     ],
     "peerDependencies": {
-        "vue": ">= 2.7.0",
-        "vite": ">= 2.5.4"
+        "vite": ">= 2.5.4",
+        "vue": ">= 2.7.0"
     },
     "engines": {
         "node": ">= 16"
