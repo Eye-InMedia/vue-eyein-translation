@@ -187,7 +187,7 @@ export function getLocaleFunc(options) {
 
 export function getLocaleTranslationsFunc(options) {
     return function() {
-        return translations[options.localeState.value]
+        return translations[options.localeState.value];
     }
 }
 
@@ -218,19 +218,16 @@ export async function loadLocale(locale, options) {
             return;
         }
 
-        if (localeFilesPromises.hasOwnProperty(`/src/assets/locales/${locale}.json`)) {
-            translations[locale] = await localeFilesPromises[`/src/assets/locales/${locale}.json`]();
-        } else if (localeFilesPromises.hasOwnProperty(`/assets/locales/${locale}.json`)) {
-            translations[locale] = await localeFilesPromises[`/assets/locales/${locale}.json`]();
-        }
+        for (const url in localeFilesPromises) {
+            if (!url.includes(`${locale}.json`) || !url.includes(`/assets/`)) {
+                continue;
+            }
 
-        let i = 1;
-        const possibleDirs = [`/src/assets/locales`, `/assets/locales`];
-        for (const possibleDir of possibleDirs) {
-            while (localeFilesPromises.hasOwnProperty(`${possibleDir}/add/${i}/${locale}.json`)) {
-                const additionalLocale = await localeFilesPromises[`${possibleDir}/add/${i}/${locale}.json`]();
-                translations[locale] = {...translations[locale], ...additionalLocale};
-                i++;
+            const localeFile = await localeFilesPromises[url]();
+            if (url.includes(`/add/`)) {
+                translations[locale] = {...translations[locale], ...localeFile};
+            } else {
+                translations[locale] = {...localeFile, ...translations[locale]};
             }
         }
     } catch (e) {
