@@ -31,7 +31,7 @@ export default async function vueEyeinTranslation(options = {}) {
             return saveLocales(options, true);
         },
         transform(src, id) {
-            return transformSourceCode(options, id, src);
+            return transformSourceCode(options, id, src, config.command === `serve`);
         },
         async handleHotUpdate({file, server, modules, timestamp}) {
            return handleHotUpdate(options, file, server, modules, timestamp);

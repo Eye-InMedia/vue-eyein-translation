@@ -1,5 +1,5 @@
 import fs from "fs";
-import {createTranslationId, findLineNumber} from "../helpers/utils.js";
+import {createTranslationId, debounce, findLineNumber} from "../helpers/utils.js";
 import path from "path";
 
 const translations = {};
@@ -10,13 +10,13 @@ export async function updateViteConfig(options, config) {
     config.server ||= {};
     config.server.watch ||= {};
     config.server.watch.ignored ||= [];
-    config.server.watch.ignored.push(`**/${options.localesDir}/**`);
+    config.server.watch.ignored.push(`**/${options.assetsDir}/locales/**`);
 }
 
 export async function loadLocales(options) {
-    if (!fs.existsSync(path.join(rootDir, options.localesDir))) {
-        console.log(`Creating locales directory: ${options.localesDir}...`);
-        fs.mkdirSync(path.join(rootDir, options.localesDir), {recursive: true});
+    if (!fs.existsSync(path.join(rootDir, options.assetsDir, `locales`))) {
+        console.log(`Creating locales directory: ${options.assetsDir}/locales...`);
+        fs.mkdirSync(path.join(rootDir, options.assetsDir, `locales`), {recursive: true});
     }
 
     const inlineLocales = options.inlineLocales.split(`||`);
@@ -26,7 +26,7 @@ export async function loadLocales(options) {
         additionalTranslations[locale] = {};
 
         if (!inlineLocales.includes(locale)) {
-            const localePath = path.join(rootDir, options.localesDir, `${locale}.json`);
+            const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
             if (!fs.existsSync(localePath)) {
                 console.log(`Creating locale file: ${localePath}...`);
                 fs.writeFileSync(localePath, `{}`, {encoding: `utf-8`});
@@ -71,15 +71,15 @@ export async function saveLocales(options, buildEnd = false) {
             }
         }
 
-        const localePath = path.join(rootDir, options.localesDir, `${locale}.json`);
+        const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
         fs.writeFileSync(localePath, JSON.stringify(translations[locale], null, `  `), {encoding: `utf-8`});
     }
 
     let i = 0;
-    fs.rmSync(path.join(rootDir, options.localesDir, `add`), {recursive: true, force: true});
+    fs.rmSync(path.join(rootDir, options.assetsDir, `locales/add`), {recursive: true, force: true});
     for (const additionalLocaleDir of options.additionalLocalesDirs) {
         i++;
-        fs.cpSync(path.join(rootDir, additionalLocaleDir), path.join(rootDir, options.localesDir, `add/${i}`), {recursive: true, force: true});
+        fs.cpSync(path.join(rootDir, additionalLocaleDir), path.join(rootDir, options.assetsDir, `locales/add/${i}`), {recursive: true, force: true});
     }
 }
 
@@ -162,7 +162,7 @@ export function handleHotUpdate(options, file, server, modules, timestamp) {
     return [];
 }
 
-export function transformSourceCode(options, fileId, src) {
+export function transformSourceCode(options, fileId, src, isServe = false) {
     if (!testFileId(fileId)) {
         return null;
     }
@@ -176,7 +176,9 @@ export function transformSourceCode(options, fileId, src) {
     src = transformTranslationAttributes(relativePath, src, options);
     src = transformJSTranslation(relativePath, src, options);
 
-    console.log(src);
+    if (isServe) {
+        debounce(() => saveLocales(options, false))();
+    }
 
     return {
         code: src

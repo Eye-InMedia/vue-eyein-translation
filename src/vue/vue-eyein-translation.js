@@ -2,7 +2,7 @@ import {applyFilter} from "./filters.js";
 
 let localeFilesPromises = {};
 try {
-    localeFilesPromises = import.meta.glob(`/src/assets/locales/**/*.json`, {import: `default`});
+    localeFilesPromises = import.meta.glob(`/**/locales/**/*.json`, {import: `default`});
 } catch (e) {
     console.error(e);
 }
@@ -220,13 +220,18 @@ export async function loadLocale(locale, options) {
 
         if (localeFilesPromises.hasOwnProperty(`/src/assets/locales/${locale}.json`)) {
             translations[locale] = await localeFilesPromises[`/src/assets/locales/${locale}.json`]();
+        } else if (localeFilesPromises.hasOwnProperty(`/assets/locales/${locale}.json`)) {
+            translations[locale] = await localeFilesPromises[`/assets/locales/${locale}.json`]();
         }
 
         let i = 1;
-        while (localeFilesPromises.hasOwnProperty(`/src/assets/locales/add/${i}/${locale}.json`)) {
-            const additionalLocale = await localeFilesPromises[`/src/assets/locales/add/${i}/${locale}.json`]();
-            translations[locale] = {...translations[locale], ...additionalLocale};
-            i++;
+        const possibleDirs = [`/src/assets/locales`, `/assets/locales`];
+        for (const possibleDir of possibleDirs) {
+            while (localeFilesPromises.hasOwnProperty(`${possibleDir}/add/${i}/${locale}.json`)) {
+                const additionalLocale = await localeFilesPromises[`${possibleDir}/add/${i}/${locale}.json`]();
+                translations[locale] = {...translations[locale], ...additionalLocale};
+                i++;
+            }
         }
     } catch (e) {
         console.error(e);

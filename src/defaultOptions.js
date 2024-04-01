@@ -1,7 +1,7 @@
 export default {
     locales: [`en-US`],
     inlineLocales: `en-US`,
-    localesDir: `src/assets/locales`,
+    assetsDir: `src/assets`,
     additionalLocalesDirs: [],
     purgeOldTranslations: true,
     warnMissingTranslations: true,
