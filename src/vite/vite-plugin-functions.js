@@ -272,7 +272,14 @@ function transformJSTranslation(relativePath, src, options) {
     }
 
     if (hasMatches) {
-        src = src.replace(/(const|let)\s+createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/g, `const tr = inject('tr');\nconst locale = inject('locale');`);
+        let replacement = ``;
+        if (!/inject\([`'"]tr[`'"]\)/g.test(src)) {
+            replacement += `const tr = inject('tr');\n`;
+        }
+        if (!/inject\([`'"]locale[`'"]\)/g.test(src)) {
+            replacement += `const locale = inject('locale');\n`;
+        }
+        src = src.replace(/(const|let)\s+createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/g, replacement);
     }
 
     return src;
