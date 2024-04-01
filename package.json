@@ -5,6 +5,7 @@
     "author": "Alexandre CHENIEUX",
     "license": "BSD-3-CLAUSE",
     "main": "index.js",
+    "type": "module",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
     },
