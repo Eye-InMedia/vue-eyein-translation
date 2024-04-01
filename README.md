@@ -15,7 +15,6 @@ Installation
 npm i vue-eyein-translation
 ```
 
-
 ### Add Vue plugin
 
 src/main.js
@@ -33,7 +32,7 @@ vite.config.js
 ```js
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue2'
-import vueEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-plugin-functions.js";
+import viteEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-plugin-functions.js";
 
 // https://vitejs.dev/config/
 export default defineConfig(config => {
@@ -41,7 +40,7 @@ export default defineConfig(config => {
         // ...
         plugins: [
             vue(),
-            vueEyeinTranslation(),
+            viteEyeinTranslation(),
             // ...
         ]
         // ...
@@ -49,6 +48,9 @@ export default defineConfig(config => {
 })
 ```
 
+### Nuxt installaiton
+
+See [Nuxt installation documentation](docs/nuxt.md)
 
 ### Configuration
 Create a file name `eyein-translation.config.js` in the root directory
@@ -129,14 +131,21 @@ You can also shorthand multiple attribute like this:
 
 - Translation of hardcoded string inside Javascript, with `createTranslation`
 ```js
+// Options API
 export default {
     name: `my-component`,
-    data() {
-        return {
-            jsTranslation: this.createTranslation(`Javascript translation||Traduction dans le Javascript`)
+    computed: { // use a computed property if you want automatic language switch when user change locale
+        jsTranslation() {
+            return this.createTranslation(`Javascript translation||Traduction dans le Javascript`)
         }
     }
 }
+```
+```js
+// Composition API
+const createTranslation = inject(`createTranslation`)
+const jsTranslation = computed(() => createTranslation(`Javascript translation||Traduction dans le Javascript`))
+
 ```
 
 - Translation objects (for example: from a database):
@@ -161,6 +170,16 @@ export default {
         }
     }
 </script>
+```
+```js
+// Composition API
+const tr = inject(`tr`);
+console.log(tr(jsTranslationObject));
+
+// with locale watch:
+const tr = inject(`tr`);
+const locale = inject(`locale`);
+const watchedRef = computed(() => tr(jsTranslationObject, null, locale));
 ```
 
 ### Available plugin methods
@@ -380,8 +399,8 @@ Ordinals: 1st 2nd 3rd 4th 103rd
     "$ordinal": {
         "one": "^er^",
         "two": "^nd^",
-        "few": "^e^",
-        "other": "^e^"
+        "few": "ème^",
+        "other": "^ème^"
     },
     "...": "..."
 }
