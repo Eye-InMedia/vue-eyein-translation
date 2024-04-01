@@ -181,7 +181,21 @@ export function getLocaleFunc(options) {
             options.localeState.value = localStorage.getItem(`locale`) || navigator.language || options.locales[0];
         }
 
-        return options.localeState.value
+        if (!options.locales.includes(options.localeState.value)) {
+            console.warn(`${options.localeState.value} locale not supported (Supported locales: ${options.locales.join(`, `)})`);
+            const shortLocale = options.localeState.value.substring(0, 2);
+            const similarLocale = options.locales.find(l => l.substring(0, 2) === shortLocale);
+
+            if (similarLocale) {
+                options.localeState.value = similarLocale;
+                setLocaleFunc(options)(similarLocale);
+            } else {
+                options.localeState.value = options.inlineLocales.split(`||`).shift();
+                setLocaleFunc(options)(options.localeState.value);
+            }
+        }
+
+        return options.localeState.value;
     }
 }
 
