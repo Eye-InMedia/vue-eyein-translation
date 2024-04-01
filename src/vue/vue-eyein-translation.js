@@ -196,12 +196,15 @@ export function setLocaleFunc(options) {
             return;
         }
 
+
         if (!translations.hasOwnProperty(locale)) {
             await loadLocale(locale, options);
         }
 
-        options.localeState.data = locale;
-        localStorage.setItem(`locale`, locale);
+        options.localeState.value = locale;
+        if (globalThis.localStorage) {
+            localStorage.setItem(`locale`, locale);
+        }
     }
 }
 
