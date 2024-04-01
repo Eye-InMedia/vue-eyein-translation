@@ -271,7 +271,6 @@ function transformJSTranslation(relativePath, src, options) {
         hasMatches = true;
     }
 
-
     if (hasMatches) {
         src = src.replace(/(const|let)\s+createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/g, `const tr = inject('tr');\nconst locale = inject('locale');`);
     }

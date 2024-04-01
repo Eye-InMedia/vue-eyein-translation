@@ -2,7 +2,7 @@ import path from "path";
 import defaultOptions from "./src/defaultOptions.js";
 import {handleHotUpdate, loadLocales, saveLocales, transformSourceCode, updateViteConfig} from "./src/vite/vite-plugin-functions";
 
-export default async function vueEyeinTranslation(options = {}) {
+export default async function viteEyeinTranslation(options = {}) {
     let fileConfig = {};
 
     try {

@@ -33,7 +33,7 @@ vite.config.js
 ```js
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue2'
-import vueEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-eyein-translation.js";
+import vueEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-plugin-functions.js";
 
 // https://vitejs.dev/config/
 export default defineConfig(config => {

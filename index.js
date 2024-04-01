@@ -1,7 +1,7 @@
 import defaultOptions from "./src/defaultOptions";
 import TComponent from "./src/vue/components/t.vue";
 import SelectLocaleComponent from "./src/vue/components/select-locale.vue";
-import {createTranslationFunc, getLocaleFunc, getLocaleTranslationsFunc, getLocalesFunc, getSSRProps, getTranslationFunc, loadLocale, mountedUpdated, setLocaleFunc} from "./src/vue/vue-eyein-translation";
+import {createTranslationFunc, getLocaleFunc, getLocaleTranslationsFunc, getLocalesFunc, getSSRProps, getTranslationFunc, loadLocale, mountedUpdated, setLocaleFunc} from "./src/vue/vue-plugin-functions.js";
 
 let fileConfig = {};
 
