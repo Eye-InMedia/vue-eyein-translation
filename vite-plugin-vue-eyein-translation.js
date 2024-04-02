@@ -6,11 +6,12 @@ export default async function viteEyeinTranslation(options = {}) {
     let fileConfig = {};
 
     try {
-        const config = await import(path.join(process.cwd(), `eyein-translation.config.js`));
+        const config = await import(path.join(`file://`, process.cwd(), `eyein-translation.config.js`));
         fileConfig = config.default;
     } catch {
+        console.warn(`Missing eyein-translation.config.js config file.`)
     }
-
+    
     options = {...defaultOptions, ...fileConfig, ...options};
 
     let config;
