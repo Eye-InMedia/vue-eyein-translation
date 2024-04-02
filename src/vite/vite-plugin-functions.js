@@ -381,6 +381,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
     }
 
     let json = JSON.stringify(translationObject)
+        .replace(/'/g, `\\'`)
         .replace(/"/g, `'`);
 
     if (dataStr) {

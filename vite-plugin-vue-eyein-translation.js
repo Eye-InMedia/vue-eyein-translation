@@ -11,7 +11,7 @@ export default async function viteEyeinTranslation(options = {}) {
     } catch {
         console.warn(`Missing eyein-translation.config.js config file.`)
     }
-    
+
     options = {...defaultOptions, ...fileConfig, ...options};
 
     let config;
