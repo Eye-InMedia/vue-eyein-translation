@@ -1,6 +1,6 @@
 {
     "name": "vue-eyein-translation",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Vue 2-3 translation plugin for Vite",
     "author": "Alexandre CHENIEUX",
     "license": "BSD-3-CLAUSE",

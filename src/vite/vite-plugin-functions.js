@@ -189,15 +189,16 @@ export function transformSourceCode(options, fileId, src, isServe = false) {
 function transformTranslationComponents(relativePath, src, options) {
     const originalSrc = src;
 
-    let allMatches = src.matchAll(/<t( [^>]*)*>([^<>]+?)<\/t>/gd);
+    let allMatches = src.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>([^<>]+?)<\/t>/gd);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const propsStr = matches[1] ? matches[1] : ``;
-        const srcStr = matches[2];
-        const line = findLineNumber(matches.indices[2], originalSrc);
+        const dataStr = matches[2] ? matches[2] : ``;
+        const srcStr = matches[3];
+        const line = findLineNumber(matches.indices[3], originalSrc);
         const context = `<t> tag at (${relativePath}:${line})`;
-        const translationObjectString = createTranslationObjectString(srcStr, context, options);
-        src = src.replace(fullMatch, `<t${propsStr} :value="${translationObjectString}"></t>`);
+        const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
+        src = src.replace(fullMatch, `<t ${propsStr} :value="${translationObjectString}"></t>`);
     }
 
     return src;
@@ -360,6 +361,20 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
         if (!inlineLocales.includes(locale)) {
             delete translationObject[locale];
         }
+    }
+
+
+    if (!dataStr) {
+        let allDataBindingMatches = translationSource.matchAll(/\{([\w.]+)(?:|[^}]+)*}/g);
+        let varList = new Set();
+        for (const matches of allDataBindingMatches) {
+            if (matches.length > 1) {
+                const varName = matches[1].split(`.`).shift();
+                varList.add(varName);
+            }
+        }
+
+        dataStr = `{${Array.from(varList).join(`,`)}}`;
     }
 
     let json = JSON.stringify(translationObject)

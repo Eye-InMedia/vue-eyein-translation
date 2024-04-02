@@ -83,38 +83,28 @@ export function getTranslationFunc(options) {
         result = pluralize(result, data, l);
 
         // Data binding
-        for (const key in data) {
-            const regex = new RegExp(`\\{${key}((?:\\|\\w+?)*?)}`);
-            const matches = regex.exec(result);
-            let transformedValue = data[key];
-            if (matches && matches.length >= 2) {
-                const filters = matches[1].split(`|`);
-                filters.shift();
-                for (const filter of filters) {
-                    transformedValue = applyFilter(filter, transformedValue, l, translations[l]);
-                }
-            }
-            result = result.replace(regex, transformedValue);
-        }
+        result = replaceDataBindings(result, data, l);
 
         return result;
     }
 }
 
-function pluralize(value, data, locale) {
-    for (const key in data) {
-        const regex = new RegExp(`\\{([^{}]*?(?:\\{${key}(?:\\|\\w+?)*?})+?[^{}]*?)}`);
-        const matches = regex.exec(value);
+function pluralize(str, data, locale) {
 
-        if (!matches || matches.length < 2) {
+    let allPluralsMatches = str.matchAll(/\{([^{}]*?(?:\{(\w+)(?:\|\w+?)*?})+?[^{}]*?)}/g);
+    for (const matches of allPluralsMatches) {
+        if (!matches || matches.length < 3) {
             continue;
         }
+
+        const fullMatch = matches[0];
+        const key = matches[2];
 
         if (typeof data[key] !== `number`) {
             throw new Error(`[Translation Error] ${key} is not a number.`);
         }
 
-        const choices = matches[1].split(`|`);
+        const choices = matches[1].replace(/\{([^|]*)\|([^|]*)}/g, `{$1[;;;]$2}`).split(`|`);
         if (choices.length < 3) {
             throw new Error(`[Translation Error] Pluralization issue, there must be at least 3 choices for n = 0, n = 1 and n > 1.`);
         }
@@ -122,18 +112,18 @@ function pluralize(value, data, locale) {
         const cardinalRules = new Intl.PluralRules(locale);
         const rule = cardinalRules.select(data[key]);
 
+        console.log(choices);
+
         let choice;
-        if (choices.length === 3) {
+        if (data[key] === 0) {
+            choice = choices[0];
+        } else if (choices.length === 3) {
             switch (rule) {
                 case `one`:
                     choice = choices[1];
                     break;
                 default:
-                    if (data[key] === 0) {
-                        choice = choices[0];
-                    } else {
                         choice = choices[2];
-                    }
                     break;
             }
         } else {
@@ -163,10 +153,38 @@ function pluralize(value, data, locale) {
             }
         }
 
-        value = value.replace(regex, choice);
+        str = str.replace(fullMatch, choice.replace(/\[;;;]/g, `|`));
     }
 
-    return value;
+    return str;
+}
+
+function replaceDataBindings(str, data, locale) {
+    let allDataBindingMatches = str.matchAll(/\{(\w+(?:\.\w+)*)(|[^}]+)*}/g);
+    for (const matches of allDataBindingMatches) {
+        const fullMatch = matches[0];
+        const keys = matches[1].split(`.`);
+
+        if (keys.length === 0) {
+            continue;
+        }
+
+        let transformedValue;
+        for (const key of keys) {
+            transformedValue = transformedValue ? transformedValue[key] : data[key];
+        }
+
+        if (matches.length > 2 && matches[2]) {
+            const filters = matches[2].split(`|`);
+            filters.shift();
+            for (const filter of filters) {
+                transformedValue = applyFilter(filter, transformedValue, locale, translations[locale]);
+            }
+        }
+        str = str.replace(fullMatch, transformedValue);
+    }
+
+    return str;
 }
 
 export function getLocalesFunc(options) {

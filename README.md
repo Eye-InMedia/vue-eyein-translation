@@ -312,6 +312,32 @@ let translationFromDatabase = {en: `Hello {w}`};
 console.log(this.tr(translationFromDatabase, {w: world}));
 ```
 
+### Implicit Data binding
+If the refs have the same name as what you want in your translations files:
+```html
+<template>
+    <p v-t.title title="Hello {world}!">
+        <t>Hello {world}!</t>
+    </p>
+</template>
+
+<script setup>
+    const world = ref(`world`);
+</script>
+```
+is equivalent of:
+```html
+<template>
+    <p v-t.title="{world}" title="Hello {world}">
+        <t :d="{world}">Implicit data binding: {world}</t>
+    </p>
+</template>
+
+<script setup>
+    const world = ref(`world`);
+</script>
+```
+*Note: You can't mix implicit and explicit databinding. If you add a `:d` property anything not defined inside the d property will be undefined.*
 
 ### Binding filters
 You can use some filters to internationalize some of your data:
