@@ -90,25 +90,27 @@ async function autoTranslateLocale(options, locale) {
     let translationsInfo = [];
 
     for (const translationId in translations[locale]) {
-        if (!translations[locale][translationId].target) {
-            let translationSource = translations[locale][translationId].source;
-            let info = {
-                id: translationId,
-                data: {}
-            }
-
-            const matches = translationSource.match(/\{.+?}/g);
-            if (matches) {
-                for (const [i, match] of matches.entries()) {
-                    info.data[`{#${i}}`] = match;
-
-                    translationSource = translationSource.replace(match, `{#${i}}`);
-                }
-            }
-
-            textsToTranslate.push(translationSource);
-            translationsInfo.push(info);
+        if (translations[locale][translationId].target) {
+            continue;
         }
+
+        let translationSource = translations[locale][translationId].source;
+        let info = {
+            id: translationId,
+            data: {}
+        }
+
+        const matches = translationSource.match(/\{.+?}/g);
+        if (matches) {
+            for (const [i, match] of matches.entries()) {
+                info.data[`{#${i}}`] = match;
+
+                translationSource = translationSource.replace(match, `{#${i}}`);
+            }
+        }
+
+        textsToTranslate.push(translationSource);
+        translationsInfo.push(info);
     }
 
     if (textsToTranslate.length === 0) {
@@ -209,7 +211,7 @@ function transformTranslationAttributes(relativePath, src, options) {
 
     let allMatches = src.matchAll(/<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=['"](.+?)['"])?).*?>/dg);
     for (const matches of allMatches) {
-        const fullMatch = matches[0];
+        let fullMatch = matches[0];
         const tagName = matches[1];
         const fullDirective = matches[2];
         const directive = matches[3];
@@ -244,6 +246,7 @@ function transformTranslationAttributes(relativePath, src, options) {
                 const filtersTxt = filters.length > 0 ? `.${filters.join(`.`)}` : ``;
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
                 src = src.replace(fullMatch, newTag);
+                fullMatch = newTag;
             }
         }
     }
