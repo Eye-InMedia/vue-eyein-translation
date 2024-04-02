@@ -301,10 +301,10 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
     }
 
     // Meaning
-    tmp = src.split(`//`);
+    tmp = src.split(`##`);
     let meaning = ``;
     if (tmp.length >= 3) {
-        throw new Error(`Error parsing translation "${srcStr}" more than 1 "//" found.`)
+        throw new Error(`Error parsing translation "${srcStr}" more than 1 "##" found.`)
     } else if (tmp.length === 2) {
         meaning = tmp[1];
         src = tmp[0];

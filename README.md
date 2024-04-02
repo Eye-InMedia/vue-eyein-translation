@@ -214,7 +214,7 @@ The text will be discarded of the resulting source code and be only in the trans
 
 Example:
 ```html
-<button><t>Close||Fermer//Text of a button used to close a modal window</t></button>
+<button><t>Close||Fermer##Text of a button used to close a modal window</t></button>
 ```
 
 The string `Text of a button used to close a modal window` will be added to all translations files as a context for the translator.
@@ -224,7 +224,7 @@ The string `Text of a button used to close a modal window` will be added to all 
 This plugin generate an ID based on a combination of the fallback locale text and the meaning.
 For the previous example:
 ```html
-<button><t>Close||Fermer//Text of a button used to close a modal window</t></button>
+<button><t>Close||Fermer##Text of a button used to close a modal window</t></button>
 ```
 The generated ID will be a hash of `Close` + `Text of a button used to close a modal window`.
 
