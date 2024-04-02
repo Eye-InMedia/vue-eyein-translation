@@ -112,8 +112,6 @@ function pluralize(str, data, locale) {
         const cardinalRules = new Intl.PluralRules(locale);
         const rule = cardinalRules.select(data[key]);
 
-        console.log(choices);
-
         let choice;
         if (data[key] === 0) {
             choice = choices[0];
@@ -251,7 +249,7 @@ export async function loadLocale(locale, options) {
         }
 
         for (const url in localeFilesPromises) {
-            if (!url.includes(`${locale}.json`) || !url.includes(`/assets/`)) {
+            if (!url.includes(`${locale}.json`) || !url.startsWith(`/` + options.assetsDir)) {
                 continue;
             }
 
