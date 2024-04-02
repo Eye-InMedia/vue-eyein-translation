@@ -1,6 +1,6 @@
 import fs from "fs";
-import {createTranslationId, debounce, findLineNumber} from "../helpers/utils.js";
 import path from "path";
+import {createTranslationId, debounce, findLineNumber} from "../helpers/utils.js";
 
 const translations = {};
 const additionalTranslations = {};

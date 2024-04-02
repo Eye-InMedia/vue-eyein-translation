@@ -21,7 +21,7 @@
 
 <script>
 
-import {capitalize} from "../filters";
+import {capitalize} from "../filters.js";
 
 export default {
     name: `select-locale`,
