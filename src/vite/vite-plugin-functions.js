@@ -19,21 +19,17 @@ export async function loadLocales(options) {
         fs.mkdirSync(path.join(rootDir, options.assetsDir, `locales`), {recursive: true});
     }
 
-    const inlineLocales = options.inlineLocales.split(`||`);
-
     for (const locale of options.locales) {
         translations[locale] = {};
         additionalTranslations[locale] = {};
 
-        if (!inlineLocales.includes(locale)) {
-            const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
-            if (!fs.existsSync(localePath)) {
-                console.log(`Creating locale file: ${localePath}...`);
-                fs.writeFileSync(localePath, `{}`, {encoding: `utf-8`});
-            }
-
-            translations[locale] = JSON.parse(fs.readFileSync(localePath, {encoding: `utf-8`}));
+        const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
+        if (!fs.existsSync(localePath)) {
+            console.log(`Creating locale file: ${localePath}...`);
+            fs.writeFileSync(localePath, `{}`, {encoding: `utf-8`});
         }
+
+        translations[locale] = JSON.parse(fs.readFileSync(localePath, {encoding: `utf-8`}));
 
         for (const additionalDir of options.additionalLocalesDirs) {
             const additionalLocalePath = path.join(rootDir, additionalDir, `${locale}.json`);
