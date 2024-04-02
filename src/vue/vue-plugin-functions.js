@@ -32,6 +32,7 @@ export function getSSRProps(app, options) {
         }
 
         ssrProps[binding.arg] = result;
+
         return ssrProps;
     }
 }

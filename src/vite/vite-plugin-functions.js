@@ -216,6 +216,7 @@ function transformTranslationAttributes(relativePath, src, options) {
         const tmp = directive.split(`:`);
         let attributes = [];
         let filters = [];
+        let propMode = false;
         if (tmp.length === 1) {
             attributes = tmp[0].split(`.`);
             attributes.shift();
@@ -224,6 +225,11 @@ function transformTranslationAttributes(relativePath, src, options) {
             attributes = [filters.shift()];
         } else {
             continue;
+        }
+
+        if (filters.includes(`prop`)) {
+            propMode = true;
+            filters = filters.filter(f => f !== `prop`)
         }
 
         let dataStr = ``;
@@ -239,12 +245,19 @@ function transformTranslationAttributes(relativePath, src, options) {
             if (result && result.length >= 2) {
                 const srcStr = result[1];
                 const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
-                const filtersTxt = filters.length > 0 ? `.${filters.join(`.`)}` : ``;
-                const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
+                const filtersTxt = filters.length > 0 ? `.${filters.filter(f => f !== `prop`).join(`.`)}` : ``;
+                let newTag;
+                if (propMode) {
+                    newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
+                } else {
+                    newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
+                }
                 src = src.replace(fullMatch, newTag);
                 fullMatch = newTag;
             }
         }
+
+        console.log(src);
     }
 
     return src
@@ -361,7 +374,6 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
             delete translationObject[locale];
         }
     }
-
 
     if (!dataStr) {
         let allDataBindingMatches = translationSource.matchAll(/\{([\w.]+)(?:|[^}]+)*}/g);
