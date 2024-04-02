@@ -337,7 +337,7 @@ is equivalent of:
     const world = ref(`world`);
 </script>
 ```
-*Note: You can't mix implicit and explicit databinding. If you add a `:d` property anything not defined inside the d property will be undefined.*
+*Note: You can't mix implicit and explicit data binding. If you add a `:d` property anything not defined inside the d property will be undefined.*
 
 ### Binding filters
 You can use some filters to internationalize some of your data:
@@ -425,7 +425,7 @@ Ordinals: 1st 2nd 3rd 4th 103rd
     "$ordinal": {
         "one": "^er^",
         "two": "^nd^",
-        "few": "ème^",
+        "few": "^ème^",
         "other": "^ème^"
     },
     "...": "..."

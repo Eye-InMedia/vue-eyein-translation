@@ -90,7 +90,6 @@ export function getTranslationFunc(options) {
 }
 
 function pluralize(str, data, locale) {
-
     let allPluralsMatches = str.matchAll(/\{([^{}]*?(?:\{(\w+)(?:\|\w+?)*?})+?[^{}]*?)}/g);
     for (const matches of allPluralsMatches) {
         if (!matches || matches.length < 3) {
