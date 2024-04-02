@@ -216,7 +216,6 @@ function transformTranslationAttributes(relativePath, src, options) {
         const tmp = directive.split(`:`);
         let attributes = [];
         let filters = [];
-        let propMode = false;
         if (tmp.length === 1) {
             attributes = tmp[0].split(`.`);
             attributes.shift();
@@ -227,10 +226,6 @@ function transformTranslationAttributes(relativePath, src, options) {
             continue;
         }
 
-        if (filters.includes(`prop`)) {
-            propMode = true;
-            filters = filters.filter(f => f !== `prop`)
-        }
 
         let dataStr = ``;
         if (matches.length > 4) {
@@ -246,18 +241,11 @@ function transformTranslationAttributes(relativePath, src, options) {
                 const srcStr = result[1];
                 const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
                 const filtersTxt = filters.length > 0 ? `.${filters.filter(f => f !== `prop`).join(`.`)}` : ``;
-                let newTag;
-                if (propMode) {
-                    newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
-                } else {
-                    newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` v-t:${attribute}${filtersTxt}="${translationObjectString}"`);
-                }
+                const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
                 src = src.replace(fullMatch, newTag);
                 fullMatch = newTag;
             }
         }
-
-        console.log(src);
     }
 
     return src

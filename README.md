@@ -129,18 +129,6 @@ You can also shorthand multiple attribute like this:
 <input type="text" placeholder="Text to translate" title="My title" v-t.placeholder.title>
 ```
 
-- Translation of ***Vue props*** of vue components, with `v-t` directive and `.prop` modifier:
-```html
-<b-tabs>
-    <b-tab title="My tab 1 title" v-t:title.prop></b-tab>
-    <!--
-    will generate something like this:
-    <b-tab :title="tr({'en-US': 'My tab 1 title', ...})"></b-tab>
-     -->
-    <b-tab title="My tab 2 title" v-t:title.prop></b-tab>
-</b-tabs>
-```
-
 *Note: filters cannot be applied: `v-t:title.prop.upper`, `.upper` will not be applied*
 
 - Translation of hardcoded string inside Javascript, with `createTranslation`
