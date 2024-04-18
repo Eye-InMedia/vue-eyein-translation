@@ -89,6 +89,7 @@ export default {
     display: inline-block;
     position: relative;
     color: black;
+    user-select: none;
 
     img {
         margin: 0;
