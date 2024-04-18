@@ -127,7 +127,7 @@ async function autoTranslateLocale(options, locale) {
     }
 }
 
-function testFileId(file) {
+function isVueFile(file) {
     if (!/\.vue$/.test(file)) {
         return false;
     }
@@ -141,7 +141,7 @@ function testFileId(file) {
 
 
 export function handleHotUpdate(options, file, server, modules, timestamp) {
-    if (!testFileId(file)) {
+    if (!isVueFile(file)) {
         return null;
     }
 
@@ -161,7 +161,17 @@ export function handleHotUpdate(options, file, server, modules, timestamp) {
 }
 
 export function transformSourceCode(options, fileId, src, isServe = false) {
-    if (!testFileId(fileId)) {
+    if (isVueFile(fileId)) {
+        return transformVueFile(options, fileId, src, isServe);
+    } else if (/\/locales\/.+\.json$/.test(fileId)) {
+        return transformLocaleFile(options, src);
+    }
+
+    return null;
+}
+
+function transformVueFile(options, fileId, src, isServe = false) {
+    if (!isVueFile(fileId)) {
         return null;
     }
 
@@ -387,4 +397,14 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
     json = json.replace(/^\{/g, `{id: '${translationId}', locale: locale,`);
 
     return json;
+}
+
+function transformLocaleFile(options, src) {
+    const json = JSON.parse(src);
+    let result = {};
+    for (const translationId in json) {
+        result[translationId] = json[translationId].target;
+    }
+
+    return JSON.stringify(result);
 }

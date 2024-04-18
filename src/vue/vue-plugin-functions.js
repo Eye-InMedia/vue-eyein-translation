@@ -62,9 +62,9 @@ export function getTranslationFunc(options) {
         if (value.hasOwnProperty(l) && value[l]) {
             // case 1: exact matching inline locale (ex: en-US)
             result = value[l];
-        } else if (value.id && translations.hasOwnProperty(l) && translations[l].hasOwnProperty(value.id) && translations[l][value.id].target) {
+        } else if (value.id && translations.hasOwnProperty(l) && translations[l].hasOwnProperty(value.id) && translations[l][value.id]) {
             // case 2: exact matching locale in external file
-            result = translations[l][value.id].target;
+            result = translations[l][value.id];
         } else if (value.hasOwnProperty(shortLocale) && value[shortLocale]) {
             // case 3: partial matching locale (ex: fr-CA matches fr translation)
             result = value[shortLocale];
