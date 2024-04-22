@@ -1,26 +1,27 @@
 <template>
     <div class="select-locale">
-        <div class="current-locale" @click="selectionVisible = true" :title="currentLocaleObject.short.toUpperCase()" @focusout="selectionVisible = false">
+        <button class="current-locale-btn" @click="selectionVisible = true" :title="currentLocaleObject.short.toUpperCase()" @focusout="focusOut" tabindex="0">
             <img v-if="flags" :src="currentLocaleObject.flag" :alt="currentLocaleObject.short.toUpperCase()">
             <template v-if="!flagOnly">
                 <span v-if="short">{{ currentLocaleObject.short.toUpperCase() }}</span>
                 <span v-else>{{ currentLocaleObject.name }}</span>
             </template>
-        </div>
+        </button>
 
-        <div class="selection" v-if="selectionVisible">
-            <div class="locales">
-                <div class="locale" v-for="locale of locales" :title="locale.value" @click="switchLocale(locale)">
-                    <img :src="locale.flag" :alt="currentLocaleObject.short.toUpperCase()">
-                    <span v-if="!flagOnly">{{ short ? locale.short.toUpperCase() : locale.name }}</span>
-                </div>
-            </div>
+        <div class="selection-overlay" v-show="selectionVisible">
+            <ul class="locales-list">
+                <li class="locale-item" v-for="(locale, index) of locales" :title="locale.value">
+                    <a @click="switchLocale(locale)" :tabindex="index+1">
+                        <img :src="locale.flag" :alt="currentLocaleObject.short.toUpperCase()">
+                        <span v-if="!flagOnly">{{ short ? locale.short.toUpperCase() : locale.name }}</span>
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 </template>
 
 <script>
-
 import {capitalize} from "../filters.js";
 
 export default {
@@ -47,13 +48,13 @@ export default {
     },
     data() {
         return {
-            currentLocale: this.getLocale(),
             selectionVisible: false
         }
     },
     computed: {
         currentLocaleObject() {
-            return this.locales.find(l => l.value === this.currentLocale);
+            const locale = this.getLocale();
+            return this.locales.find(l => l.value === locale);
         },
         locales() {
             const supportedLocales = this.getLocales();
@@ -78,7 +79,9 @@ export default {
         async switchLocale(locale) {
             await this.setLocale(locale.value);
             this.selectionVisible = false;
-            this.currentLocale = this.getLocale();
+        },
+        focusOut() {
+            setTimeout(() => this.selectionVisible = false, 500);
         }
     }
 }
@@ -90,59 +93,65 @@ export default {
     position: relative;
     color: black;
     user-select: none;
-
-    img {
-        margin: 0;
-        width: 30px;
-
-        + span {
-            margin-left: 7px;
-        }
-    }
-
-    .current-locale {
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        span {
-            margin-left: 7px;
-        }
-    }
-
-    .selection {
-        color: black;
-        position: absolute;
-        top: calc(1em + 10px);
-        left: 0;
-        z-index: 1001;
-
-        display: inline-block;
-
-        .locales {
-            display: grid;
-            grid-template-rows: repeat(8, auto);
-            grid-auto-flow: column;
-
-            background-color: white;
-            border-radius: 3px;
-            box-shadow: 2px 2px 7px 0 black;
-
-            .locale {
-                display: flex;
-                align-items: center;
-                justify-content: left;
-                padding: 5px 10px;
-                cursor: pointer;
-                user-select: none;
-
-                &:hover {
-                    background-color: rgba(0, 0, 0, 0.1);
-                }
-            }
-        }
-    }
-
 }
+
+.select-locale img {
+    margin: 0;
+    width: 30px;
+}
+
+.select-locale img + span {
+    margin-left: 7px;
+}
+
+.select-locale .current-locale-btn {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+}
+
+.select-locale .current-locale-btn span {
+    margin-left: 7px;
+}
+
+.select-locale .selection-overlay {
+    color: black;
+    position: absolute;
+    top: calc(1em + 10px);
+    left: 0;
+    z-index: 1001;
+
+    display: inline-block;
+}
+
+.select-locale .selection-overlay .locales-list {
+    display: grid;
+    grid-template-rows: repeat(8, auto);
+    grid-auto-flow: column;
+
+    background-color: white;
+    border-radius: 3px;
+    box-shadow: 2px 2px 7px 0 black;
+    padding: 0;
+}
+
+.select-locale .selection-overlay .locales-list .locale-item {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    padding: 5px 10px;
+    cursor: pointer;
+    user-select: none;
+    border: none;
+    background: none;
+    list-style: none;
+}
+
+.select-locale .selection-overlay .locales-list .locale-item:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
 </style>
