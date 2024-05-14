@@ -215,7 +215,7 @@ function transformTranslationComponents(relativePath, src, options) {
 function transformTranslationAttributes(relativePath, src, options) {
     const originalSrc = src;
 
-    let allMatches = src.matchAll(/<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=['"](.+?)['"])?).*?>/dg);
+    let allMatches = src.matchAll(/<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=(?:'(.+?)'|"(.+?)"))?).*?>/dg);
     for (const matches of allMatches) {
         let fullMatch = matches[0];
         const tagName = matches[1];
@@ -245,10 +245,11 @@ function transformTranslationAttributes(relativePath, src, options) {
         for (const attribute of attributes) {
             const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
 
-            const attributeRegex = new RegExp(`\\s+${attribute}=['"](.+?)['"]`);
+            const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
             const result = fullMatch.match(attributeRegex);
+
             if (result && result.length >= 2) {
-                const srcStr = result[1];
+                const srcStr = result[1] || result[2];
                 const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
                 const filtersTxt = filters.length > 0 ? `.${filters.filter(f => f !== `prop`).join(`.`)}` : ``;
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
@@ -264,7 +265,7 @@ function transformTranslationAttributes(relativePath, src, options) {
 function transformJSTranslation(relativePath, src, options) {
     const originalSrc = src;
 
-    let allMatches = src.matchAll(/createTranslation\(`(.+?)`(?:, (.+?))?\)/dg);
+    let allMatches = src.matchAll(/createTranslation\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
     let hasMatches = false;
     for (const matches of allMatches) {
         const fullMatch = matches[0];
@@ -298,6 +299,10 @@ function transformJSTranslation(relativePath, src, options) {
 
 function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
     let src = srcStr;
+
+    if (!srcStr) {
+        throw new Error(`createTranslationObjectString srcStr is empty (context: ${context})`);
+    }
 
     // Custom id
     let translationId;
