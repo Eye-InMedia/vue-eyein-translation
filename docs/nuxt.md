@@ -71,3 +71,8 @@ export default {
 };
 
 ```
+
+.gitignore
+```
+assets/locales/add
+```
