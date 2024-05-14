@@ -40,6 +40,10 @@ export function getSSRProps(app, options) {
 export function mountedUpdated(app, options) {
     return (el, binding) => {
         const ssrProps = getSSRProps(app, options)(binding);
+        if (!ssrProps) {
+            return;
+        }
+
         const attribute = Object.keys(ssrProps).pop();
         const value = Object.values(ssrProps).pop();
 
