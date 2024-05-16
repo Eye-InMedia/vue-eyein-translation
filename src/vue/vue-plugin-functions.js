@@ -61,6 +61,14 @@ export function getTranslationFunc(options) {
             l = locale.value;
         }
 
+        if (typeof value === `string`) {
+            try {
+                value = JSON.parse(value);
+            } catch {
+                return `Invalid translation format`;
+            }
+        }
+
         const shortLocale = l.split(`-`).shift();
         let result;
         if (value.hasOwnProperty(l) && value[l]) {
@@ -84,11 +92,20 @@ export function getTranslationFunc(options) {
             data = {};
         }
 
+        // Replace double {{variable}} by single {variable}
+        result = result.replace(/\{\{(.+)}}/g, `{$1}`);
+
         // Pluralization
         result = pluralize(result, data, l);
 
         // Data binding
         result = replaceDataBindings(result, data, l);
+
+        if (value.filters) {
+            for (const filter of value.filters) {
+                result = applyFilter(filter, result, l, translations[l]);
+            }
+        }
 
         return result;
     }
