@@ -215,7 +215,7 @@ function transformTranslationComponents(relativePath, src, options) {
 function transformTranslationAttributes(relativePath, src, options) {
     const originalSrc = src;
 
-    let allMatches = src.matchAll(/<(\w+).*\s+((v-t(?::\w+)?(?:\.[\w-]+)*)(?:=(?:'(.+?)'|"(.+?)"))?).*?>/dg);
+    let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:=['"](.+?)['"])?)[^<>]*?>/sdg);
     for (const matches of allMatches) {
         let fullMatch = matches[0];
         const tagName = matches[1];
@@ -223,19 +223,8 @@ function transformTranslationAttributes(relativePath, src, options) {
         const directive = matches[3];
         const line = findLineNumber(matches.indices[3], originalSrc);
 
-        const tmp = directive.split(`:`);
-        let attributes = [];
-        let filters = [];
-        if (tmp.length === 1) {
-            attributes = tmp[0].split(`.`);
-            attributes.shift();
-        } else if (tmp.length === 2) {
-            filters = tmp[1].split(`.`);
-            attributes = [filters.shift()];
-        } else {
-            continue;
-        }
-
+        const attributes = directive.split(`.`);
+        attributes.shift();
 
         let dataStr = ``;
         if (matches.length > 4) {
@@ -251,10 +240,50 @@ function transformTranslationAttributes(relativePath, src, options) {
             if (result && result.length >= 2) {
                 const srcStr = result[1] || result[2];
                 const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
-                const filtersTxt = filters.length > 0 ? `.${filters.filter(f => f !== `prop`).join(`.`)}` : ``;
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
                 src = src.replace(fullMatch, newTag);
                 fullMatch = newTag;
+            }
+        }
+    }
+
+    let matchesLength = 1;
+    let i = 0;
+    while (matchesLength > 0 && i < 10) {
+        i++;
+        matchesLength = 0;
+        let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:=['"](.+?)['"])?)[^<>]*?>/sdg);
+
+        for (const matches of allMatches) {
+            matchesLength++;
+            let fullMatch = matches[0];
+            const tagName = matches[1];
+            const fullDirective = matches[2];
+            const directive = matches[3];
+            const line = findLineNumber(matches.indices[3], originalSrc);
+
+            const tmp = directive.split(`:`);
+            const filters = tmp[1].split(`.`);
+            const attributes = [filters.shift()];
+
+            let dataStr = ``;
+            if (matches.length > 4) {
+                dataStr = matches[4];
+            }
+
+            for (const attribute of attributes) {
+                const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
+
+                const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
+                const result = fullMatch.match(attributeRegex);
+
+                if (result && result.length >= 2) {
+                    const srcStr = result[1] || result[2];
+                    const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr, filters);
+                    const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
+                    src = src.replace(fullMatch, newTag);
+                    fullMatch = newTag;
+                }
             }
         }
     }
@@ -297,7 +326,7 @@ function transformJSTranslation(relativePath, src, options) {
     return src;
 }
 
-function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
+function createTranslationObjectString(srcStr, context, options, dataStr = ``, filters = []) {
     let src = srcStr;
 
     if (!srcStr) {
@@ -389,6 +418,10 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``) {
         }
 
         dataStr = `{${Array.from(varList).join(`,`)}}`;
+    }
+
+    if (filters.length > 0) {
+        translationObject.filters = filters
     }
 
     let json = JSON.stringify(translationObject)
