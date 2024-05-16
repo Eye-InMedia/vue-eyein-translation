@@ -62,10 +62,15 @@ export function getTranslationFunc(options) {
         }
 
         if (typeof value === `string`) {
-            try {
-                value = JSON.parse(value);
-            } catch {
-                return `Invalid translation format`;
+            if (value.startsWith(`@@`)) {
+                value = {id: value.replace(`@@`, ``)};
+            } else {
+                try {
+                    value = JSON.parse(value);
+                } catch {
+                    console.error(`Invalid translation format: ${value}`);
+                    return value;
+                }
             }
         }
 
