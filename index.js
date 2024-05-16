@@ -1,7 +1,7 @@
 import defaultOptions from "./src/defaultOptions.js";
 import TComponent from "./src/vue/components/t.vue";
 import SelectLocaleComponent from "./src/vue/components/select-locale.vue";
-import {createTranslationFunc, getLocaleFunc, getLocaleTranslationsFunc, getLocalesFunc, getSSRProps, getTranslationFunc, loadLocale, mountedUpdated, setLocaleFunc} from "./src/vue/vue-plugin-functions.js";
+import {createTranslationFunc, getLocaleFunc, getLocaleTranslationsFunc, getLocalesFunc, getSSRProps, getTranslationFunc, loadLocaleFunc, mountedUpdated, setLocaleFunc} from "./src/vue/vue-plugin-functions.js";
 
 let fileConfig = {};
 
@@ -10,10 +10,8 @@ const vueEyeinTranslation = {
         try {
             const config = await import(`/eyein-translation.config.js`);
             fileConfig = config.default;
-
-            const locale = getLocaleFunc(fileConfig)();
-            await loadLocale(locale, fileConfig);
-        } catch {
+        } catch(e) {
+            console.error(e);
         }
 
         options = {...defaultOptions, ...fileConfig, ...options};
@@ -43,6 +41,7 @@ const vueEyeinTranslation = {
         app.config.globalProperties.getLocale = getLocaleFunc(options);
         app.config.globalProperties.getLocaleTranslations = getLocaleTranslationsFunc(options);
         app.config.globalProperties.setLocale = setLocaleFunc(options);
+        app.config.globalProperties.loadLocale = loadLocaleFunc(options);
         app.config.globalProperties.createTranslation = createTranslationFunc(options);
 
         app.provide(`tr`, getTranslationFunc(options));
@@ -52,10 +51,18 @@ const vueEyeinTranslation = {
         app.provide(`getLocale`, getLocaleFunc(options));
         app.provide(`getLocaleTranslations`, getLocaleTranslationsFunc(options));
         app.provide(`setLocale`, setLocaleFunc(options));
+        app.provide(`loadLocale`, loadLocaleFunc(options));
         app.provide(`createTranslation`, createTranslationFunc(options));
 
         app.component(`t`, TComponent);
         app.component(`select-locale`, SelectLocaleComponent);
+
+        try {
+            const locale = getLocaleFunc(options)();
+            await loadLocaleFunc(options)(locale);
+        } catch (e) {
+            console.error(e);
+        }
     }
 }
 

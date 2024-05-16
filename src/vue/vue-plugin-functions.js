@@ -251,9 +251,8 @@ export function setLocaleFunc(options) {
             return;
         }
 
-
         if (!translations.hasOwnProperty(locale)) {
-            await loadLocale(locale, options);
+            await loadLocaleFunc(options)(locale);
         }
 
         options.localeState.value = locale;
@@ -263,26 +262,29 @@ export function setLocaleFunc(options) {
     }
 }
 
-export async function loadLocale(locale, options) {
-    try {
-        if (translations.hasOwnProperty(locale)) {
-            return;
-        }
-
-        for (const url in localeFilesPromises) {
-            if (!url.includes(`${locale}.json`) || !url.startsWith(`/` + options.assetsDir)) {
-                continue;
+export function loadLocaleFunc(options) {
+    return async function(locale) {
+        try {
+            if (translations.hasOwnProperty(locale)) {
+                return;
             }
 
-            const localeFile = await localeFilesPromises[url]();
-            if (url.includes(`/add/`)) {
-                translations[locale] = {...translations[locale], ...localeFile};
-            } else {
-                translations[locale] = {...localeFile, ...translations[locale]};
+            for (const url in localeFilesPromises) {
+                if (!url.includes(`${locale}.json`) || !url.startsWith(`/` + options.assetsDir)) {
+                    continue;
+                }
+
+                const localeFile = await localeFilesPromises[url]();
+
+                if (url.includes(`/add/`)) {
+                    translations[locale] = {...localeFile, ...translations[locale]};
+                } else {
+                    translations[locale] = {...translations[locale], ...localeFile};
+                }
             }
+        } catch (e) {
+            console.error(e);
         }
-    } catch (e) {
-        console.error(e);
     }
 }
 
