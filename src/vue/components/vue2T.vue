@@ -1,6 +1,5 @@
 <template>
-    <template v-if="noHtml">{{htmlResult}}</template>
-    <span v-else v-html="htmlResult"></span>
+    <span v-html="htmlResult"></span>
 </template>
 
 <script>
@@ -22,10 +21,6 @@ const props = {
         default() {
             return `_blank`
         }
-    },
-    noHtml: {
-        type: Boolean,
-        default: false
     }
 };
 
