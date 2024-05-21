@@ -10,7 +10,7 @@ try {
     fileConfig = config.default;
 
     const locale = getLocaleFunc(fileConfig)();
-    await loadLocale(locale, fileConfig);
+    await loadLocaleFunc(fileConfig)(locale);
 } catch {
 }
 
@@ -37,7 +37,7 @@ const vueEyeinTranslation = {
         }
 
         const locale = getLocaleFunc(options)();
-        loadLocale(locale, options);
+        loadLocaleFunc(options)(locale);
 
         app.prototype.tr = getTranslationFunc(options);
         app.prototype.locale = options.localeState.value;
