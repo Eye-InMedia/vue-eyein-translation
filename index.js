@@ -1,6 +1,5 @@
 import defaultOptions from "./src/defaultOptions.js";
 import TComponent from "./src/vue/components/t.vue";
-import SelectLocaleComponent from "./src/vue/components/select-locale.vue";
 import {createTranslationFunc, getLocaleFunc, getLocaleTranslationsFunc, getLocalesFunc, getSSRProps, getTranslationFunc, loadLocaleFunc, mountedUpdated, setLocaleFunc} from "./src/vue/vue-plugin-functions.js";
 
 let fileConfig = {};
@@ -55,7 +54,6 @@ const vueEyeinTranslation = {
         app.provide(`createTranslation`, createTranslationFunc(options));
 
         app.component(`t`, TComponent);
-        app.component(`select-locale`, SelectLocaleComponent);
 
         try {
             const locale = getLocaleFunc(options)();
