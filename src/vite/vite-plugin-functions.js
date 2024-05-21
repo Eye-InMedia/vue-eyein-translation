@@ -359,10 +359,21 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, f
         translationId = createTranslationId(translationSource + meaning);
     }
 
+    let groupId = null;
+    tmp = translationId.split('.');
+    translationId = tmp.pop();
+    if (tmp.length > 0) {
+        groupId = tmp.pop();
+    }
+    const fullTranslationId = groupId ? `${groupId}.${translationId}` : translationId;
+
     const translationObject = {};
 
     for (const locale of options.locales) {
-        if (!translations[locale].hasOwnProperty(translationId) && !additionalTranslations[locale].hasOwnProperty(translationId)) {
+        const localeTranslation = groupId ? translations[locale][groupId] : translations[locale];
+        const localeAdditionalTranslation = groupId ? additionalTranslations[locale][groupId] : additionalTranslations[locale];
+
+        if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
             // if no translation found
             const translation = {
                 source: translationSource,
@@ -380,26 +391,31 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, f
                 translation.meaning = meaning;
             }
 
-            translations[locale][translationId] = translation;
 
-            translationObject[locale] = translations[locale][translationId].target;
-        } else if (translations[locale].hasOwnProperty(translationId) && translations[locale][translationId].target) {
+            if (groupId) {
+                translations[locale][groupId][translationId] = translation;
+                translationObject[locale] = translation.target;
+            } else {
+                translations[locale][translationId] = translation;
+                translationObject[locale] = translation.target;
+            }
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (typeof localeTranslation[translationId] === `string` || localeTranslation[translationId].target)) {
             // if complete translation found
-            translationObject[locale] = translations[locale][translationId].target;
+            translationObject[locale] = typeof localeTranslation[translationId] === `string` ? localeTranslation[translationId] : localeTranslation[translationId].target;
 
-            translations[locale][translationId].context = context;
-            translations[locale][translationId].last_update = new Date();
-        } else if (additionalTranslations[locale].hasOwnProperty(translationId) && additionalTranslations[locale][translationId].target) {
+            localeTranslation[translationId].context = context;
+            localeTranslation[translationId].last_update = new Date();
+        } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(translationId) && (typeof localeAdditionalTranslation[translationId] === `string` || localeAdditionalTranslation[translationId].target)) {
             // if complete additional translation found
-            translationObject[locale] = additionalTranslations[locale][translationId].target;
-        } else if (translations[locale].hasOwnProperty(translationId)) {
+            translationObject[locale] = typeof localeAdditionalTranslation[translationId] === `string` ? localeAdditionalTranslation[translationId] : localeAdditionalTranslation[translationId].target;
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
             // translation incomplete found update context
-            translations[locale][translationId].context = context;
-            translations[locale][translationId].last_update = new Date();
+            localeTranslation[translationId].context = context;
+            localeTranslation[translationId].last_update = new Date();
         }
 
         if (options.warnMissingTranslations && !translationObject[locale]) {
-            console.warn(`Missing translation ${locale} ${translationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
+            console.warn(`Missing translation ${locale} ${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
         }
 
         if (!inlineLocales.includes(locale)) {
@@ -440,8 +456,14 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, f
 function transformLocaleFile(options, src) {
     const json = JSON.parse(src);
     let result = {};
-    for (const translationId in json) {
-        result[translationId] = json[translationId].target;
+    for (const groupId in json) {
+        if (typeof json[groupId] === `string` || json[groupId].hasOwnProperty(`target`)) {
+            result[groupId] = typeof json[groupId] === `string` ? json[groupId] : json[groupId].target;
+        } else {
+            for (const translationId in json[groupId]) {
+                result[`${groupId}.${translationId}`] = typeof json[groupId][translationId] === `string` ? json[groupId][translationId] : json[groupId][translationId].target;
+            }
+        }
     }
 
     return JSON.stringify(result);
