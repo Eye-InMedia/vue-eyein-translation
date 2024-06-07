@@ -5,7 +5,7 @@ Vue Eye-In Translation
 
 Compatibility
 -------------
-Vue 2.7, Vue 3, Vite 5
+Vue 2.7, Vue 3, Nuxt 3, Vite 5
 
 
 
@@ -17,22 +17,98 @@ npm i vue-eyein-translation
 
 ### Add Vue plugin
 
+***For the locale to be reactive to changes you must provide a Ref-Like Object as a localeState.***
+
+#### Vue 3
+src/main.js
+```js
+import { createApp, ref } from 'vue'
+import loadVueEyeinTranslation from "vue-eyein-translation/vue3.js";
+import eyeinTranslationConfig from "../eyein-translation.config.js";
+
+const app = createApp({})
+
+eyeinTranslationConfig.localeState = ref(null);
+
+// asynchronously load plugin
+loadVueEyeinTranslation(eyeinTranslationConfig)
+    .then(vueEyeinTranslation => {
+        app.use(vueEyeinTranslation);
+
+        app.mount('#app');
+    })
+```
+
+#### Vue 2
 src/main.js
 ```js
 import Vue from 'vue'
-import vueEyeinTranslation from "vue-eyein-translation";
+import loadVueEyeinTranslation from "vue-eyein-translation/vue2.js";
+import eyeinTranslationConfig from "../eyein-translation.config.js";
 
-Vue.use(vueEyeinTranslation);
+eyeinTranslationConfig.localeState = Vue.observable({
+    value: null
+});
+
+// asynchronously load plugin
+loadVueEyeinTranslation(eyeinTranslationConfig)
+    .then(vueEyeinTranslation => {
+        Vue.use(vueEyeinTranslation);
+
+        new Vue({
+            render: h => h(App)
+        }).$mount(`#app`);
+    })
+```
+
+#### Nuxt 3
+nuxt.config.js
+```js
+export default defineNuxtConfig({
+    // ...
+    modules: [
+        // ...
+        [`vue-eyein-translation`, {
+            locales: [`en-US`, `fr-CA`, `es-ES`],
+            inlineLocales: `en-US||fr-CA`,
+            assetsDir: `assets`,
+            additionalLocalesDirs: [`vue-components/locales`],
+            autoTranslate: {
+                locales: [`es-ES`],
+                async translationFunction(fromLocale, toLocale, textsToTranslate) {
+                    const resp = await fetch(`http://localhost:3000/translate`, {
+                        method: `POST`,
+                        headers: {
+                            "Content-Type": `application/json`
+                        },
+                        body: JSON.stringify({
+                            texts: textsToTranslate,
+                            from: fromLocale,
+                            to: toLocale
+                        })
+                    });
+
+                    return resp.json();
+                }
+            }
+        }]
+    ]
+    // ...
+})
+
 ```
 
 
 ### Add Vite plugin
 
+*Note: This step is not necessary for Nuxt 3*
+
 vite.config.js
 ```js
 import {defineConfig} from 'vite'
 import vue from '@vitejs/plugin-vue2'
-import viteEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-plugin-functions.js";
+import viteEyeinTranslation from "vue-eyein-translation/vite-plugin-vue-eyein-translation.js";
+import eyeinTranslationConfig from "./eyein-translation.config.js";
 
 // https://vitejs.dev/config/
 export default defineConfig(config => {
@@ -40,7 +116,7 @@ export default defineConfig(config => {
         // ...
         plugins: [
             vue(),
-            viteEyeinTranslation(),
+            viteEyeinTranslation(eyeinTranslationConfig),
             // ...
         ]
         // ...
@@ -48,12 +124,8 @@ export default defineConfig(config => {
 })
 ```
 
-### Nuxt installaiton
-
-See [Nuxt installation documentation](docs/nuxt.md)
-
 ### Configuration
-Create a file name `eyein-translation.config.js` in the root directory
+You can create a file `eyein-translation.config.js` in the root directory
 
 ```js
 export default {
@@ -75,6 +147,26 @@ export default {
 src/assets/locales/add
 ```
 
+For Nuxt:
+.gitignore
+```
+assets/locales/add
+```
+
+You can then import it when you load the plugin:
+```js
+import eyeinTranslationConfig from "../eyein-translation.config.js";
+
+// main.js
+loadVueEyeinTranslation(eyeinTranslationConfig)
+
+// vite.config.js
+viteEyeinTranslation(eyeinTranslationConfig)
+
+// nuxt.config.js
+[`vue-eyein-translation`, eyeinTranslationConfig]
+```
+
 ### Auto translation
 
 You can configure auto translation with autoTranslate object in `eyein-translation.config.js` file with something like this:
@@ -93,7 +185,7 @@ export default {
             const resp = await fetch(`<your translator endpoint>`, {
                 method: `POST`,
                 headers: {
-                    "Content-Type": `application/json`,
+                    "Content-Type": `application/json`
                 },
                 body: JSON.stringify({
                     texts: textsToTranslate,
@@ -186,17 +278,24 @@ const watchedRef = computed(() => tr(jsTranslationObject, null, locale));
 
 ### Available plugin methods
 
+#### Vue
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
 - `getLocales()`: Returns the list of available locales
 - `getLocale()`: Returns the current locale in use
 - `getLocaleTranslations()`: Return the content of the translation file for current locale
 - `setLocale(locale)`: Change the current locale
-- `createTranslation()`: Tells the compiler to generate a translation entry inside javascript
+- `createTranslation()`: Tells the compiler to generate a translation entry inside
+
+#### Nuxt composables
+- `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
+- `getLocales()`: Returns the list of available locales
+- `useLocale()`: Returns the current locale as a cookie ref that can be changed to load other locales
+- `getLocaleTranslations()`: Return the content of the translation file for current locale
+- `createTranslation()`: Tells the compiler to generate a translation entry inside
 
 ### Available plugin components
 
 - `<t>`: translation component
-- `<select-locale>`: Select input to change the locale
 
 ### Multiple inline translations
 

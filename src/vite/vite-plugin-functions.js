@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import {createTranslationId, debounce, findLineNumber} from "../helpers/utils.js";
+import {createTranslationId, debounce, findLineNumber} from "../runtime/helpers/utils.js";
 
 const translations = {};
 const additionalTranslations = {};
@@ -43,7 +43,6 @@ export async function loadLocales(options) {
 
 export async function saveLocales(options, buildEnd = false) {
     console.log(`Saving translation files...`);
-
     const inlineLocales = options.inlineLocales.split(`||`);
     const localesWithFiles = options.locales.filter(l => inlineLocales.indexOf(l) === -1);
 
@@ -65,6 +64,8 @@ export async function saveLocales(options, buildEnd = false) {
                     console.error(e);
                 }
             }
+        } else {
+            console.warn(`Skipping purge and auto translation in dev mode...`);
         }
 
         const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
@@ -90,6 +91,10 @@ async function autoTranslateLocale(options, locale) {
             continue;
         }
 
+        if (!translations[locale][translationId].source) {
+            continue;
+        }
+
         let translationSource = translations[locale][translationId].source;
         let info = {
             id: translationId,
@@ -110,10 +115,11 @@ async function autoTranslateLocale(options, locale) {
     }
 
     if (textsToTranslate.length === 0) {
+        console.log(`Nothing to translate automatically...`);
         return;
     }
 
-    console.log(`Translating automatically ${textsToTranslate.length} texts for ${locale} locale...`);
+    console.warn(`Translating automatically ${textsToTranslate.length} texts for ${locale} locale...`);
 
     const translatedTexts = await options.autoTranslate.translationFunction(sourceLocale, locale, textsToTranslate);
 
@@ -132,7 +138,7 @@ function isVueFile(file) {
         return false;
     }
 
-    if (file.includes(`/node_modules/`) || file.includes(`/t.vue`) || file.includes(`/select-locale.vue`)) {
+    if (file.includes(`/node_modules/`) || file.includes(`/t.vue`) || file.includes(`/vue2T.vue`)) {
         return false;
     }
 
@@ -215,6 +221,8 @@ function transformTranslationComponents(relativePath, src, options) {
 function transformTranslationAttributes(relativePath, src, options) {
     const originalSrc = src;
 
+    let hasMatches = false;
+
     let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:=['"](.+?)['"])?)[^<>]*?>/sdg);
     for (const matches of allMatches) {
         let fullMatch = matches[0];
@@ -243,6 +251,7 @@ function transformTranslationAttributes(relativePath, src, options) {
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
                 src = src.replace(fullMatch, newTag);
                 fullMatch = newTag;
+                hasMatches = true;
             }
         }
     }
@@ -283,9 +292,14 @@ function transformTranslationAttributes(relativePath, src, options) {
                     const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="tr(${translationObjectString})"`);
                     src = src.replace(fullMatch, newTag);
                     fullMatch = newTag;
+                    hasMatches = true;
                 }
             }
         }
+    }
+
+    if (hasMatches) {
+        src = injectScriptSetupFunction(src, options);
     }
 
     return src
@@ -313,14 +327,53 @@ function transformJSTranslation(relativePath, src, options) {
     }
 
     if (hasMatches) {
+        src = injectScriptSetupFunction(src, options);
+    }
+
+    return src;
+}
+
+function injectScriptSetupFunction(src, options) {
+    const setupRegex = /<script [^>]*setup[^>]*>/g;
+    if (!setupRegex.test(src)) {
+        return src;
+    }
+
+    let index = setupRegex.lastIndex;
+    let endOfImportsFound = false;
+    function setEndOfImportsIndex() {
+        if (endOfImportsFound) {
+            return;
+        }
+        const allImportsMatches = [...src.matchAll(/^\s*import\s+.*$/gmd)];
+        if (!allImportsMatches || allImportsMatches.length === 0) {
+            endOfImportsFound = true;
+            return;
+        }
+        const lastImportMatch = allImportsMatches.pop();
+        index = lastImportMatch.indices[0][1];
+        endOfImportsFound = true;
+    }
+
+    if (/createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/.test(src)) {
         let replacement = ``;
         if (!/inject\([`'"]tr[`'"]\)/g.test(src)) {
             replacement += `const tr = inject('tr');\n`;
         }
-        if (!/inject\([`'"]locale[`'"]\)/g.test(src)) {
-            replacement += `const locale = inject('locale');\n`;
+        if (!/inject\([`'"]__vueEyeinLocale[`'"]\)/g.test(src)) {
+            replacement += `const __vueEyeinLocale = inject('__vueEyeinLocale');\n`;
         }
         src = src.replace(/(const|let)\s+createTranslation\s*=\s*inject\([`'"]createTranslation[`'"]\);?/g, replacement);
+    } else {
+        if (!/inject\([`'"]__vueEyeinLocale[`'"]\)/g.test(src)) {
+            setEndOfImportsIndex();
+            src = src.substring(0, index) + `\nconst __vueEyeinLocale = inject('__vueEyeinLocale');\n` + src.substring(index);
+        }
+
+        if (!options.nuxt && !/inject\([`'"]tr[`'"]\)/g.test(src)) {
+            setEndOfImportsIndex();
+            src = src.substring(0, index) + `\nconst tr = inject('tr');\n` + src.substring(index);
+        }
     }
 
     return src;
@@ -415,7 +468,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, f
         }
 
         if (options.warnMissingTranslations && !translationObject[locale]) {
-            console.warn(`Missing translation ${locale} ${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
+            console.warn(`Missing translation ${locale} @@${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
         }
 
         if (!inlineLocales.includes(locale)) {
@@ -448,7 +501,7 @@ function createTranslationObjectString(srcStr, context, options, dataStr = ``, f
         json = json.replace(/^\{/g, `{data: ${dataStr},`);
     }
 
-    json = json.replace(/^\{/g, `{id: '${translationId}', locale: locale,`);
+    json = json.replace(/^\{/g, `{id: '${translationId}', locale: __vueEyeinLocale,`);
 
     return json;
 }

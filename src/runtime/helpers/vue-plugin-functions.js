@@ -1,4 +1,4 @@
-import {applyFilter} from "./filters.js";
+import {applyFilter} from "./filters";
 
 let localeFilesPromises = {};
 try {
@@ -86,9 +86,17 @@ export function getTranslationFunc(options) {
             // case 3: partial matching locale (ex: fr-CA matches fr translation)
             result = value[shortLocale];
         } else if (value.hasOwnProperty(options.locales[0]) && value[options.locales[0]]) {
-            result = value[options.locales[0]];
+            result = `## ` + value[options.locales[0]];
         } else {
-            return `Missing translation`;
+            if (typeof value === `string`) {
+                return `Missing translation for: ${value}`;
+            } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
+                return `Missing translation for: ${value[`en-US`]}`;
+            } else if (value.id) {
+                return `Missing translation for @@${value.id}`;
+            } else {
+                return `Missing translation`;
+            }
         }
 
         if (!data && value.data) {

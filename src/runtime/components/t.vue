@@ -1,10 +1,11 @@
 <template>
-    <span v-html="htmlResult"></span>
+    <template v-if="noHtml">{{htmlResult}}</template>
+    <span v-else v-html="htmlResult"></span>
 </template>
 
 <script>
-import SimpleMarkdownParser from "../../helpers/SimpleMarkdownParser.js";
-import {applyFilter, getAllFilters} from "../filters.js";
+import SimpleMarkdownParser from "../helpers/SimpleMarkdownParser";
+import {applyFilter, getAllFilters} from "../helpers/filters";
 
 const props = {
     value: {
@@ -21,6 +22,10 @@ const props = {
         default() {
             return `_blank`
         }
+    },
+    noHtml: {
+        type: Boolean,
+        default: false
     }
 };
 

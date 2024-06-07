@@ -1,17 +1,37 @@
 {
     "name": "vue-eyein-translation",
-    "version": "1.0.6",
+    "version": "2.0.0",
     "description": "Vue 2-3 translation plugin for Vite",
     "author": "Alexandre CHENIEUX",
     "license": "BSD-3-CLAUSE",
-    "main": "index.js",
     "type": "module",
+    "main": "./dist/module.cjs",
+    "types": "./dist/types.d.ts",
+    "files": [
+        "dist"
+    ],
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "start": "nuxi dev playground",
+        "dev:build": "nuxi build playground",
+        "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
+        "build": "nuxt-module-build build"
+    },
+    "dependencies": {
+        "@nuxt/kit": "^3.11.2"
+    },
+    "devDependencies": {
+        "@nuxt/devtools": "^1.2.0",
+        "@nuxt/eslint-config": "^0.3.10",
+        "@nuxt/module-builder": "^0.6.0",
+        "eslint": "^9.2.0",
+        "nuxt": "^3.11.2"
     },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Eye-InMedia/vue-eyein-translation.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Eye-InMedia/vue-eyein-translation/issues"
     },
     "keywords": [
         "vue",
@@ -19,15 +39,21 @@
         "i18n",
         "translation"
     ],
+    "engines": {
+        "node": ">= 16"
+    },
     "peerDependencies": {
         "vite": ">= 2.5.4",
         "vue": ">= 2.7.0"
     },
-    "engines": {
-        "node": ">= 16"
-    },
-    "bugs": {
-        "url": "https://github.com/Eye-InMedia/vue-eyein-translation/issues"
-    },
-    "homepage": "https://github.com/Eye-InMedia/vue-eyein-translation#readme"
+    "exports": {
+        ".": {
+            "types": "./dist/types.d.ts",
+            "import": "./dist/module.mjs",
+            "require": "./dist/module.cjs"
+        },
+        "./vue2.js": "./vue2.js",
+        "./vue3.js": "./vue3.js",
+        "./vite-plugin-vue-eyein-translation.js": "./vite-plugin-vue-eyein-translation.js"
+    }
 }
