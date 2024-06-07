@@ -1,3 +1,6 @@
+import {useRequestHeaders, useNuxtApp, useCookie} from '#app'
+import {watch} from 'vue'
+
 export default function useLocale() {
     let locale;
     if (process.server) {
