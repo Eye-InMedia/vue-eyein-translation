@@ -1,6 +1,6 @@
 {
     "name": "vue-eyein-translation",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "description": "Vue 2-3 translation plugin for Vite",
     "author": "Alexandre CHENIEUX",
     "license": "BSD-3-CLAUSE",
@@ -8,7 +8,11 @@
     "main": "./dist/module.cjs",
     "types": "./dist/types.d.ts",
     "files": [
-        "dist"
+        "dist",
+        "src",
+        "vue2.js",
+        "vue3.js",
+        "vite-plugin-vue-eyein-translation.js"
     ],
     "scripts": {
         "start": "nuxi dev playground",
