@@ -12,10 +12,15 @@ export default defineNuxtPlugin(async nuxtApp => {
         locale = navigator.language.substring(0, 5)
     }
 
+    const options = useRuntimeConfig().public.vueEyeinTranslation;
+
+    if (!locale) {
+        locale = options.locales[0];
+    }
+
     const localeState = useCookie(`locale`, {secure: true, sameSite: true});
     localeState.value ||= locale;
 
-    const options = useRuntimeConfig().public.vueEyeinTranslation;
 
     const vueEyeinTranslation = await loadVueEyeinTranslation({...options, localeState});
     nuxtApp.vueApp.use(vueEyeinTranslation);
