@@ -23,6 +23,7 @@ export default function useLocale() {
     localeState.value ||= locale;
 
     watch(localeState, async (newLocale, oldLocale) => {
+        nuxtApp.vueApp.config.globalProperties.__vueEyeinLocale.value = newLocale;
         nuxtApp.vueApp.config.globalProperties.loadLocale(newLocale);
     });
 

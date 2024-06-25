@@ -21,7 +21,6 @@ export default defineNuxtPlugin(async nuxtApp => {
     const localeState = useCookie(`locale`, {secure: true, sameSite: true});
     localeState.value ||= locale;
 
-
     const vueEyeinTranslation = await loadVueEyeinTranslation({...options, localeState});
     nuxtApp.vueApp.use(vueEyeinTranslation);
 })
