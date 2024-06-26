@@ -140,19 +140,9 @@ export default {
 
 - All locale files will be in `/src/assets/locales` in **JSON** format
 - First inline locale will be used as fallback locale when no translation is found. In this example, `en-US` is the fallback locale
-- Additional locale directories can be added they will be automatically copied inside `/src/assets/locales/add`. You should add this folder to your `.gitignore`
 
-.gitignore
-```
-src/assets/locales/add
-```
 
 For Nuxt:
-.gitignore
-```
-assets/locales/add
-```
-
 You can then import it when you load the plugin:
 ```js
 import eyeinTranslationConfig from "../eyein-translation.config.js";

@@ -283,13 +283,25 @@ export function loadLocaleFunc(options) {
             }
 
             for (const url in localeFilesPromises) {
-                if (!url.includes(`${locale}.json`) || !url.startsWith(`/` + options.assetsDir)) {
+                if (!url.includes(`${locale}.json`)) {
+                    continue;
+                }
+
+                let isAdditionalLocale = false;
+                for (const localesDir of options.additionalLocalesDirs) {
+                    if (url.startsWith(`/` + localesDir)) {
+                        isAdditionalLocale = true;
+                        break;
+                    }
+                }
+
+                if (!isAdditionalLocale && !url.startsWith(`/` + options.assetsDir)) {
                     continue;
                 }
 
                 const localeFile = await localeFilesPromises[url]();
 
-                if (url.includes(`/add/`)) {
+                if (isAdditionalLocale) {
                     translations[locale] = {...localeFile, ...translations[locale]};
                 } else {
                     translations[locale] = {...translations[locale], ...localeFile};

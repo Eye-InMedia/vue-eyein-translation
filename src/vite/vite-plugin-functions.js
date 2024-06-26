@@ -71,13 +71,6 @@ export async function saveLocales(options, buildEnd = false) {
         const localePath = path.join(rootDir, options.assetsDir, `locales/${locale}.json`);
         fs.writeFileSync(localePath, JSON.stringify(translations[locale], null, `  `), {encoding: `utf-8`});
     }
-
-    let i = 0;
-    fs.rmSync(path.join(rootDir, options.assetsDir, `locales/add`), {recursive: true, force: true});
-    for (const additionalLocaleDir of options.additionalLocalesDirs) {
-        i++;
-        fs.cpSync(path.join(rootDir, additionalLocaleDir), path.join(rootDir, options.assetsDir, `locales/add/${i}`), {recursive: true, force: true});
-    }
 }
 
 async function autoTranslateLocale(options, locale) {
