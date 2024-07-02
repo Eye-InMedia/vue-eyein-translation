@@ -1,18 +1,20 @@
 import {defineNuxtPlugin, useRuntimeConfig, useRequestHeaders, useCookie} from '#app'
 import loadVueEyeinTranslation from "../../vue3.js";
+import {parseNavigatorLanguage} from "./helpers/vue-plugin-functions";
 
 export default defineNuxtPlugin(async nuxtApp => {
-    let locale;
+    let navigatorLocaleString;
     if (process.server) {
         const headers = useRequestHeaders([`accept-language`])
         if (headers[`accept-language`]) {
-            locale = headers[`accept-language`].substring(0, 5)
+            navigatorLocaleString = headers[`accept-language`]
         }
     } else {
-        locale = navigator.language.substring(0, 5)
+        navigatorLocaleString = navigator.language
     }
 
     const options = useRuntimeConfig().public.vueEyeinTranslation;
+    let locale = parseNavigatorLanguage(navigatorLocaleString, options);
 
     if (!locale) {
         locale = options.locales[0];

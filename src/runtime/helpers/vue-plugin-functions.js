@@ -228,7 +228,7 @@ export function getLocalesFunc(options) {
 export function getLocaleFunc(options) {
     return function() {
         if (!options.localeState.value) {
-            options.localeState.value = localStorage.getItem(`locale`) || navigator.language || options.locales[0];
+            options.localeState.value = localStorage.getItem(`locale`) || parseNavigatorLanguage(navigator.language, options);
         }
 
         if (!options.locales.includes(options.localeState.value)) {
@@ -238,15 +238,39 @@ export function getLocaleFunc(options) {
 
             if (similarLocale) {
                 options.localeState.value = similarLocale;
+                console.warn(`Using similar locale ${similarLocale} instead`);
                 setLocaleFunc(options)(similarLocale);
             } else {
                 options.localeState.value = options.inlineLocales.split(`||`).shift();
+                console.warn(`Using default locale ${similarLocale} instead`);
                 setLocaleFunc(options)(options.localeState.value);
             }
         }
 
         return options.localeState.value;
     }
+}
+
+export function parseNavigatorLanguage(navigatorLanguage, options) {
+    let locale;
+    const acceptedLocales = navigatorLanguage.split(`,`);
+    for (const acceptedLocale of acceptedLocales) {
+        const l = acceptedLocale.split(`;`).shift();
+        if (options.locales.includes(l)) {
+            locale = l;
+            break;
+        }
+
+        if (l.length === 2) {
+            const similarLocale = options.locales.find(loc => loc.startsWith(l));
+            if (similarLocale) {
+                locale = similarLocale;
+                break;
+            }
+        }
+    }
+
+    return locale || options.locales[0];
 }
 
 export function getLocaleTranslationsFunc(options) {
