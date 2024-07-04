@@ -252,25 +252,34 @@ export function getLocaleFunc(options) {
 }
 
 export function parseNavigatorLanguage(navigatorLanguage, options) {
-    let locale;
-    const acceptedLocales = navigatorLanguage.split(`,`);
-    for (const acceptedLocale of acceptedLocales) {
-        const l = acceptedLocale.split(`;`).shift();
-        if (options.locales.includes(l)) {
-            locale = l;
-            break;
+    try {
+        if (!navigatorLanguage) {
+            return options.locales[0];
         }
 
-        if (l.length === 2) {
-            const similarLocale = options.locales.find(loc => loc.startsWith(l));
-            if (similarLocale) {
-                locale = similarLocale;
+        let locale;
+        const acceptedLocales = navigatorLanguage.split(`,`);
+        for (const acceptedLocale of acceptedLocales) {
+            const l = acceptedLocale.split(`;`).shift();
+            if (options.locales.includes(l)) {
+                locale = l;
                 break;
             }
-        }
-    }
 
-    return locale || options.locales[0];
+            if (l.length === 2) {
+                const similarLocale = options.locales.find(loc => loc.startsWith(l));
+                if (similarLocale) {
+                    locale = similarLocale;
+                    break;
+                }
+            }
+        }
+
+        return locale || options.locales[0];
+    } catch (e) {
+        console.error(e);
+        return options.locales[0];
+    }
 }
 
 export function getLocaleTranslationsFunc(options) {
