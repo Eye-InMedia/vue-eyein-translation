@@ -242,7 +242,7 @@ export function getLocaleFunc(options) {
                 setLocaleFunc(options)(similarLocale);
             } else {
                 options.localeState.value = options.inlineLocales.split(`||`).shift();
-                console.warn(`Using default locale ${similarLocale} instead`);
+                console.warn(`Using default locale ${options.localeState.value} instead`);
                 setLocaleFunc(options)(options.localeState.value);
             }
         }
