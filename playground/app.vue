@@ -8,12 +8,14 @@
         <div title="Test EN||Test FR" v-t:title>
             <t>Test translation||Traduction de test</t>
         </div>
-        <div>{{ test }}</div>
+        <div title.t="Title: {hello}||Titre: {hello}">{{ test }}</div>
         <div>{{ test2 }}</div>
     </main>
 </template>
 
 <script setup>
+const hello = ref(`Hello world`);
+
 const test = createTranslation(`JS translation||Traduction dans le JS`);
 const test2 = tr({en: `English`, fr: `French`});
 

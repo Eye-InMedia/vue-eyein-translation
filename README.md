@@ -206,12 +206,17 @@ Guide
 <input type="text" placeholder="Text to translate" v-t:placeholder title="My title" v-t:title>
 ```
 
-You can also shorthand multiple attribute like this:
+You can also use a shorthand for multiple attribute with `.` like this:
 ```html
 <input type="text" placeholder="Text to translate" title="My title" v-t.placeholder.title>
 ```
 
-*Note: filters cannot be applied: `v-t:title.prop.upper`, `.upper` will not be applied*
+Another shorthand using `.t` after the attribute name (But your IDE might alert you about unknown or missing attribute):
+```html
+<input type="text" placeholder.t="Text to translate" title.t="My title">
+```
+
+*Note: You cannot apply filters with shorthands. You must use the `v-t:` syntax like this: `v-t:title.upper`*
 
 - Translation of hardcoded string inside Javascript, with `createTranslation`
 ```js
@@ -407,9 +412,9 @@ console.log(this.tr(translationFromDatabase, {w: world}));
 If the refs have the same name as what you want in your translations files:
 ```html
 <template>
-    <p v-t.title title="Hello {world}!">
+    <a v-t.title title="Hello {world}!">
         <t>Hello {world}!</t>
-    </p>
+    </a>
 </template>
 
 <script setup>

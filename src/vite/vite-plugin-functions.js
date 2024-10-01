@@ -180,6 +180,7 @@ function transformVueFile(options, fileId, src, isServe = false) {
     src = src.replace(/<!--.+?-->/g, ` `);
 
     src = transformTranslationComponents(relativePath, src, options);
+    src = transformTranslationSimpleAttributes(relativePath, src, options);
     src = transformTranslationAttributes(relativePath, src, options);
     src = transformJSTranslation(relativePath, src, options);
 
@@ -206,6 +207,28 @@ function transformTranslationComponents(relativePath, src, options) {
         const context = `<t> tag at (${relativePath}:${line})`;
         const translationObjectString = createTranslationObjectString(srcStr, context, options, dataStr);
         src = src.replace(fullMatch, `<t ${propsStr} :value="${translationObjectString}"></t>`);
+    }
+
+    return src;
+}
+
+function transformTranslationSimpleAttributes(relativePath, src, options) {
+    const originalSrc = src;
+
+    let hasMatches = false;
+
+    let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t=['"](.+?)['"])[^<>]*?>/sdg);
+    for (const matches of allMatches) {
+        let fullMatch = matches[0];
+        const tagName = matches[1];
+        const fullAttribute = matches[2];
+        const attribute = matches[3];
+        const srcStr = matches[4];
+        const line = findLineNumber(matches.indices[3], originalSrc);
+        const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
+
+        const translationObjectString = createTranslationObjectString(srcStr, context, options);
+        src = src.replace(fullAttribute, `:${attribute}="tr(${translationObjectString})"`);
     }
 
     return src;
@@ -295,7 +318,7 @@ function transformTranslationAttributes(relativePath, src, options) {
         src = injectScriptSetupFunction(src, options);
     }
 
-    return src
+    return src;
 }
 
 function transformJSTranslation(relativePath, src, options) {
@@ -334,6 +357,7 @@ function injectScriptSetupFunction(src, options) {
 
     let index = setupRegex.lastIndex;
     let endOfImportsFound = false;
+
     function setEndOfImportsIndex() {
         if (endOfImportsFound) {
             return;
