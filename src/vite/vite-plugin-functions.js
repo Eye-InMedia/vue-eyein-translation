@@ -215,20 +215,25 @@ function transformTranslationComponents(relativePath, src, options) {
 function transformTranslationSimpleAttributes(relativePath, src, options) {
     const originalSrc = src;
 
-    let hasMatches = false;
+    let matchesLength = 1;
+    let i = 0;
+    while (matchesLength > 0 && i < 10) {
+        i++;
+        matchesLength = 0;
+        let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t=['"](.+?)['"])[^<>]*?>/sdg);
 
-    let allMatches = src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t=['"](.+?)['"])[^<>]*?>/sdg);
-    for (const matches of allMatches) {
-        let fullMatch = matches[0];
-        const tagName = matches[1];
-        const fullAttribute = matches[2];
-        const attribute = matches[3];
-        const srcStr = matches[4];
-        const line = findLineNumber(matches.indices[3], originalSrc);
-        const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
+        for (const matches of allMatches) {
+            matchesLength++;
+            const tagName = matches[1];
+            const fullAttribute = matches[2];
+            const attribute = matches[3];
+            const srcStr = matches[4];
+            const line = findLineNumber(matches.indices[3], originalSrc);
+            const context = `${attribute} of <${tagName}> at (${relativePath}:${line})`;
 
-        const translationObjectString = createTranslationObjectString(srcStr, context, options);
-        src = src.replace(fullAttribute, `:${attribute}="tr(${translationObjectString})"`);
+            const translationObjectString = createTranslationObjectString(srcStr, context, options);
+            src = src.replace(fullAttribute, `:${attribute}="tr(${translationObjectString})"`);
+        }
     }
 
     return src;
