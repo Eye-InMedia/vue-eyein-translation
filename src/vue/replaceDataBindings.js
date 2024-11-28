@@ -1,6 +1,6 @@
 import {applyFilter} from "./filters.js";
 
-export default function replaceDataBindings(str, data, locale, translations) {
+export default function replaceDataBindings(str, data, locale, localeOptions) {
     let allDataBindingMatches = str.matchAll(/\{(\w+(?:\.\w+)*)(|[^}]+)*}/g);
     for (const matches of allDataBindingMatches) {
         const fullMatch = matches[0];
@@ -19,7 +19,7 @@ export default function replaceDataBindings(str, data, locale, translations) {
             const filters = matches[2].split(`|`);
             filters.shift();
             for (const filter of filters) {
-                transformedValue = applyFilter(filter, transformedValue, locale, translations[locale]);
+                transformedValue = applyFilter(filter, transformedValue, locale, localeOptions);
             }
         }
         str = str.replace(fullMatch, transformedValue);

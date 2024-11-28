@@ -18,6 +18,20 @@ export default {
         translations = ctx.translations;
         localeFilesPromises = ctx.localeFilesPromises;
     },
+    getTranslations() {
+        return translations;
+    },
+    getLocaleTranslations(locale) {
+        return translations[locale];
+    },
+    getLocaleOptions(locale) {
+        return Object.keys(translations[locale])
+            .filter(key => key.startsWith(`$`))
+            .reduce((obj, key) => {
+                obj[key] = translations[locale][key];
+                return obj;
+            }, {});
+    },
     locale: _eLocale,
     locales: computed(() => Object.keys(translations)),
     async setLocale(locale) {
@@ -168,7 +182,6 @@ async function loadLocale(locale) {
 }
 
 export function getSSRProps(binding) {
-    console.log(binding);
     if (!binding.arg) {
         return;
     }

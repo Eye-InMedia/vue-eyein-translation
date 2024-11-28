@@ -6,6 +6,7 @@
 <script>
 import SimpleMarkdownParser from "../../vue/SimpleMarkdownParser.js";
 import {applyFilter, getAllFilters} from "../../vue/filters.js";
+import _eTr from "../../vue/_eTr.js";
 
 const props = {
     value: {
@@ -53,9 +54,10 @@ export default {
 
             let result = this._eTr.tr(this.value, data);
 
+            const localeOptions = _eTr.getLocaleOptions(_eTr.locale.value);
             for (const filter of filters) {
                 if (this[filter]) {
-                    result = applyFilter(filter, result);
+                    result = applyFilter(filter, result, _eTr.locale.value, localeOptions);
                 }
             }
 

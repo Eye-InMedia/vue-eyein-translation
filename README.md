@@ -309,7 +309,7 @@ The generated ID will be a hash of `Close` + `Text of a button used to close a m
 For some situations, you want to create a custom ID. For example, for common translations between projects with the `additionalLocalesDirs` feature.
 You can create custom translation ids:
 
-fr-FR.json
+fr-FR.locale
 ```json
 {
     "ok": {
@@ -364,7 +364,7 @@ In `v-t` directive:
 ```
 You can have only one translation for the work "ok" but use filter to change the case.
 
-*Note: You cannot use the shorthand `v-t.title.placeholder` if you use filters you must use `v-t:title.upper v-t:placeholder.lower`*
+*Note: You cannot use the shorthands `v-t.title.placeholder` or  `placeholder.t` if you use filters you must use `v-t:title.upper v-t:placeholder.lower`*
 
 ### Data binding
 - You can use `:d` prop of `<t>` component to add data binding using `{yourVariable}` inside the text
@@ -394,7 +394,7 @@ console.log(this.tr(translationFromDatabase, {w: world}));
 If the refs have the same name as what you want in your translations files:
 ```html
 <template>
-    <a v-t.title title="Hello {world}!">
+    <a title.t="Hello {world}!">
         <t>Hello {world}!</t>
     </a>
 </template>
@@ -406,8 +406,8 @@ If the refs have the same name as what you want in your translations files:
 is equivalent of:
 ```html
 <template>
-    <p v-t.title="{world}" title="Hello {world}">
-        <t :d="{world}">Implicit data binding: {world}</t>
+    <p v-t:title="{world}" title="Hello {world}">
+        <t :d="{world}">Hello {world}</t>
     </p>
 </template>
 
@@ -463,9 +463,9 @@ or
 ```
 
 ```html
-<t :d="{n: 0}">{no time|1 minute|{n} minutes} left</p>
-<t :d="{n: 1}">{no time|1 minute|{n} minutes} left</p>
-<t :d="{n: 10}">{no time|1 minute|{n} minutes} left</p>
+<div><t :d="{n: 0}">{no time|1 minute|{n} minutes} left</t></div>
+<div><t :d="{n: 1}">{no time|1 minute|{n} minutes} left</t></div>
+<div><t :d="{n: 10}">{no time|1 minute|{n} minutes} left</t></div>
 ```
 Result:
 ```

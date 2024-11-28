@@ -4,6 +4,11 @@ export default function transformLocaleFile(ctx) {
     const json = JSON.parse(ctx.src);
     let result = {};
     for (const groupId in json) {
+        if (groupId.startsWith(`$`)) {
+            result[groupId] = json[groupId];
+            continue;
+        }
+
         if (typeof json[groupId] === `string` || json[groupId].hasOwnProperty(`target`)) {
             result[groupId] = typeof json[groupId] === `string` ? json[groupId] : json[groupId].target;
         } else {
