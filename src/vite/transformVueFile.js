@@ -10,7 +10,7 @@ const hmrLocalesUpdate = debounce(ctx => {
     }
     saveLocales(ctx, [...updatedLocales]);
     updatedLocales = new Set();
-})
+}, 500)
 
 export default function transformVueFile(ctx) {
     if (ctx.fileId.includes(`/node_modules/`) || ctx.fileId.includes(`/t.vue`) || ctx.fileId.includes(`/vue2T.vue`)) {
@@ -359,8 +359,16 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             // change translation file if inline has been updated
             if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
+                if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline !== localeInlineTranslation) {
+                    throw new Error(`/!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
+                }
+
                 localeTranslation[translationId].target = localeInlineTranslation;
                 updatedLocales.add(locale);
+
+                if (!ctx.hmr) {
+                    localeTranslation[translationId].last_inline = localeInlineTranslation;
+                }
             }
         } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(translationId) && (typeof localeAdditionalTranslation[translationId] === `string` || localeAdditionalTranslation[translationId].target)) {
             // if complete additional translation found
