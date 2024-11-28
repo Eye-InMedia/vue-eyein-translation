@@ -18,12 +18,12 @@ export function createTranslationId(str) {
         return h2.toString(36).padStart(7, '0') + h1.toString(36).padStart(7, '0');
     }
 
-    return cyrb64Hash(str);
+    return `zz` + cyrb64Hash(str);
 }
 
-let timer;
+export function debounce(func, timeout = 100) {
+    let timer;
 
-export function debounce(func, timeout = 1000) {
     return (...args) => {
         clearTimeout(timer);
         timer = setTimeout(() => {

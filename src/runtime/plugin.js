@@ -1,6 +1,6 @@
 import {defineNuxtPlugin, useRuntimeConfig, useRequestHeaders, useCookie} from '#app'
 import loadVueEyeinTranslation from "../../vue3.js";
-import {parseNavigatorLanguage} from "./helpers/vue-plugin-functions";
+import {parseNavigatorLanguage} from "../vue/vue-plugin-functions.js";
 
 export default defineNuxtPlugin(async nuxtApp => {
     let navigatorLocaleString;

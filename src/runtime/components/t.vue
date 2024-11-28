@@ -1,11 +1,11 @@
 <template>
-    <template v-if="noHtml">{{htmlResult}}</template>
+    <template v-if="noHtml">{{ translation }}</template>
     <span v-else v-html="htmlResult"></span>
 </template>
 
 <script>
-import SimpleMarkdownParser from "../helpers/SimpleMarkdownParser";
-import {applyFilter, getAllFilters} from "../helpers/filters";
+import SimpleMarkdownParser from "../../vue/SimpleMarkdownParser.js";
+import {applyFilter, getAllFilters} from "../../vue/filters.js";
 
 const props = {
     value: {
@@ -39,25 +39,23 @@ for (const filter of filters) {
 export default {
     name: `t`,
     props: props,
+    inject: [`_eTr`],
     computed: {
         translation() {
             if (!this.value) {
                 throw new Error(`<t> is Missing value or slot`);
             }
 
-            const locale = this.getLocale();
-            const localeOptions = this.getLocaleTranslations();
-
             let data = this.d;
             if (this.value.data) {
                 data = {...data, ...this.value.data}
             }
 
-            let result = this.tr(this.value, data, locale);
+            let result = this._eTr.tr(this.value, data);
 
             for (const filter of filters) {
                 if (this[filter]) {
-                    result = applyFilter(filter, result, locale, localeOptions);
+                    result = applyFilter(filter, result);
                 }
             }
 

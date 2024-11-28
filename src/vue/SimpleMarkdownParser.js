@@ -24,14 +24,17 @@ export default class SimpleMarkdownParser {
 
     #convertMarkdownToHTML(options) {
         this.str = this.str
-            .replace(/\*\*(.+?)\*\*/g, `<strong>$1</strong>`)
-            .replace(/\*(.+?)\*/g, `<em>$1</em>`)
-            .replace(/_(.+?)_/g, `<u>$1</u>`)
-            .replace(/\[(.+?)]\((.+?)\)/g, `<a href="$2" target="${options.linkTarget}">$1</a>`)
-            .replace(/~~(.+?)~~/g, `<s>$1</s>`)
-            .replace(/\^(.+?)\^/g, `<sup>$1</sup>`)
-            .replace(/~(.+?)~/g, `<sub>$1</sub>`)
-            .replace(/==(.+?)==/g, `<mark>$1</mark>`);
+            .replace(/\*\*(.+?)\*\*/g, `<strong>$1</strong>`) // bold
+            .replace(/\*(.+?)\*/g, `<em>$1</em>`) // italic
+            .replace(/_(.+?)_/g, `<u>$1</u>`) // underline
+            .replace(/~~(.+?)~~/g, `<s>$1</s>`) // strikethrough
+            .replace(/--(.+?)--/g, `<s>$1</s>`) // strikethrough
+            .replace(/\^(.+?)\^/g, `<sup>$1</sup>`) // superscript / exponent
+            .replace(/~(.+?)~/g, `<sub>$1</sub>`) // subscript
+            .replace(/==(.+?)==/g, `<mark>$1</mark>`) // highlight
+            .replace(/\.\[(.+?)]\((.+?)\)/g, `<span class="$2">$1</span>`) // classes
+            .replace(/#\[(.+?)]\((.+?)\)/g, `<span id="$2">$1</span>`) // id
+            .replace(/\[(.+?)]\((.+?)\)/g, `<a href="$2" target="${options.linkTarget}">$1</a>`) // link
     }
 
     parse(options) {

@@ -17,48 +17,30 @@ npm i vue-eyein-translation
 
 ### Add Vue plugin
 
-***For the locale to be reactive to changes you must provide a Ref-Like Object as a localeState.***
-
 #### Vue 3
 src/main.js
 ```js
-import { createApp, ref } from 'vue'
-import loadVueEyeinTranslation from "vue-eyein-translation/vue3.js";
-import eyeinTranslationConfig from "../eyein-translation.config.js";
+import { createApp } from 'vue'
+import vueEyeinTranslation from "vue-eyein-translation/vue3.js";
 
 const app = createApp({})
 
-eyeinTranslationConfig.localeState = ref(null);
+app.use(vueEyeinTranslation);
 
-// asynchronously load plugin
-loadVueEyeinTranslation(eyeinTranslationConfig)
-    .then(vueEyeinTranslation => {
-        app.use(vueEyeinTranslation);
-
-        app.mount('#app');
-    })
+app.mount('#app');
 ```
 
 #### Vue 2
 src/main.js
 ```js
 import Vue from 'vue'
-import loadVueEyeinTranslation from "vue-eyein-translation/vue2.js";
-import eyeinTranslationConfig from "../eyein-translation.config.js";
+import vueEyeinTranslation from "vue-eyein-translation/vue2.js";
 
-eyeinTranslationConfig.localeState = Vue.observable({
-    value: null
-});
+Vue.use(vueEyeinTranslation);
 
-// asynchronously load plugin
-loadVueEyeinTranslation(eyeinTranslationConfig)
-    .then(vueEyeinTranslation => {
-        Vue.use(vueEyeinTranslation);
-
-        new Vue({
-            render: h => h(App)
-        }).$mount(`#app`);
-    })
+new Vue({
+    render: h => h(App)
+}).$mount(`#app`);
 ```
 
 #### Nuxt 3
@@ -148,7 +130,7 @@ You can then import it when you load the plugin:
 import eyeinTranslationConfig from "../eyein-translation.config.js";
 
 // main.js
-loadVueEyeinTranslation(eyeinTranslationConfig)
+app.use(vueEyeinTranslation, eyeinTranslationConfig);
 
 // vite.config.js
 viteEyeinTranslation(eyeinTranslationConfig)
@@ -218,22 +200,22 @@ Another shorthand using `.t` after the attribute name (But your IDE might alert 
 
 *Note: You cannot apply filters with shorthands. You must use the `v-t:` syntax like this: `v-t:title.upper`*
 
-- Translation of hardcoded string inside Javascript, with `createTranslation`
+- Translation of hardcoded string inside Javascript, with `staticTr`
 ```js
 // Options API
 export default {
     name: `my-component`,
     computed: { // use a computed property if you want automatic language switch when user change locale
         jsTranslation() {
-            return this.createTranslation(`Javascript translation||Traduction dans le Javascript`)
+            return this.staticTr(`Javascript translation||Traduction dans le Javascript`)
         }
     }
 }
 ```
 ```js
 // Composition API
-const createTranslation = inject(`createTranslation`)
-const jsTranslation = computed(() => createTranslation(`Javascript translation||Traduction dans le Javascript`))
+const staticTr = inject(`staticTr`)
+const jsTranslation = staticTr(`Javascript translation||Traduction dans le Javascript`)
 
 ```
 
@@ -268,7 +250,7 @@ console.log(tr(jsTranslationObject));
 // with locale watch:
 const tr = inject(`tr`);
 const locale = inject(`locale`);
-const watchedRef = computed(() => tr(jsTranslationObject, null, locale));
+const watchedRef = computed(() => tr(jsTranslationObject));
 ```
 
 ### Available plugin methods
@@ -277,16 +259,14 @@ const watchedRef = computed(() => tr(jsTranslationObject, null, locale));
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
 - `getLocales()`: Returns the list of available locales
 - `getLocale()`: Returns the current locale in use
-- `getLocaleTranslations()`: Return the content of the translation file for current locale
 - `setLocale(locale)`: Change the current locale
-- `createTranslation()`: Tells the compiler to generate a translation entry inside
+- `staticTr()`: Tells the compiler to generate a translation entry inside
 
 #### Nuxt composables
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
 - `getLocales()`: Returns the list of available locales
 - `useLocale()`: Returns the current locale as a cookie ref that can be changed to load other locales
-- `getLocaleTranslations()`: Return the content of the translation file for current locale
-- `createTranslation()`: Tells the compiler to generate a translation entry inside
+- `staticTr()`: Tells the compiler to generate a translation entry inside
 
 ### Available plugin components
 
@@ -352,8 +332,10 @@ And use it like this in the code:
 
 Markdown is supported inside translation to apply some styling or features (only in `<t>` component):
 ```html
-<t>**bold** *italic* _underline_ ***italic and bold*** ~~strikethrough~~ ==highlighted==, H~2~O, x^2^</t>
+<t>**bold** *italic* _underline_ ***italic and bold*** ~~strikethrough~~ --strikethrough alternative-- ==highlighted==, H~2~O, x^2^</t>
 <t>Click on [this link](https://example.com)</t>
+<t>.[some text with classes](class1 class2)</t> // will generate: <span class="class1 class2">some text with classes</span>
+<t>#[some text with id](myId)</t> // will generate: <span id="myId">some text with id</span>
 ```
 
 As a result some characters must be escaped in translations:
@@ -399,7 +381,7 @@ You can have only one translation for the work "ok" but use filter to change the
 - Data binding inside javascript:
 ```js
 let world = `world`;
-createTranslation(`Hello {w}`, {w: world});
+staticTr(`Hello {w}`, {w: world});
 ```
 
 - Translation object:
@@ -502,7 +484,7 @@ Ordinals: 1st 2nd 3rd 4th 103rd
 ```
 
 **Important:** Ordinals must be configured inside translations files:
-/src/assets/locales/en-US.json
+/src/assets/locales/en-US.locale
 ```json
 {
     "$ordinal": {
@@ -515,7 +497,7 @@ Ordinals: 1st 2nd 3rd 4th 103rd
 }
 ```
 
-/src/assets/locales/fr-FR.json
+/src/assets/locales/fr-FR.locale
 ```json
 {
     "$ordinal": {

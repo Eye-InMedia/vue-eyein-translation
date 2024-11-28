@@ -3,8 +3,8 @@
 </template>
 
 <script>
-import SimpleMarkdownParser from "../helpers/SimpleMarkdownParser.js";
-import {applyFilter, getAllFilters} from "../helpers/filters.js";
+import SimpleMarkdownParser from "../../vue/SimpleMarkdownParser.js";
+import {applyFilter, getAllFilters} from "../../vue/filters.js";
 
 const props = {
     value: {
@@ -40,19 +40,16 @@ export default {
                 throw new Error(`<t> is Missing value or slot`);
             }
 
-            const locale = this.getLocale();
-            const localeOptions = this.getLocaleTranslations();
-
             let data = this.d;
             if (this.value.data) {
                 data = {...data, ...this.value.data}
             }
 
-            let result = this.tr(this.value, data, locale);
+            let result = this.tr(this.value, data);
 
             for (const filter of filters) {
                 if (this[filter]) {
-                    result = applyFilter(filter, result, locale, localeOptions);
+                    result = applyFilter(filter, result);
                 }
             }
 

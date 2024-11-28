@@ -1,6 +1,6 @@
 {
     "name": "vue-eyein-translation",
-    "version": "2.0.10",
+    "version": "3.0.0",
     "description": "Vue 2-3 translation plugin for Vite",
     "author": "Alexandre CHENIEUX",
     "license": "BSD-3-CLAUSE",
@@ -22,14 +22,14 @@
         "prepublish": "npm run build"
     },
     "dependencies": {
-        "@nuxt/kit": "^3.11.2"
+        "@nuxt/kit": "^3.14.159"
     },
     "devDependencies": {
-        "@nuxt/devtools": "^1.2.0",
+        "@nuxt/devtools": "^1.6.0",
         "@nuxt/eslint-config": "^0.3.10",
         "@nuxt/module-builder": "^0.6.0",
         "eslint": "^9.2.0",
-        "nuxt": "^3.11.2"
+        "nuxt": "^3.14.159"
     },
     "repository": {
         "type": "git",
