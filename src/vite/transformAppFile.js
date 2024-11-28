@@ -69,30 +69,6 @@ export default function transformAppFile(ctx) {
         localeFilesPromises: _eTrLocaleFilesPromises
     });\n`;
 
-    if (ctx.hmr) {
-        code += `
-        if (import.meta.hot) {
-            const locales = ${JSON.stringify(Object.keys(importsPaths))};
-            import.meta.hot.accept(${JSON.stringify(Object.values(importsPaths))}, modules => {
-                console.log(\`Updating locales\`);
-                let i = 0;
-                for (const module of modules) {
-                    const locale = locales[i];
-                    i++;
-                    if (!module) {
-                        continue;
-                    }
-
-                    console.log(\`Updating locale \${locale}\`);
-                    for (const key in module.default) {
-                        _eTrTranslations[locale][key] = module.default[key];
-                    }
-                }
-            });
-        }
-        `;
-    }
-
     ctx.src = ctx.src.replace(/(<script.*>)/, `$1` + importsCode);
     ctx.src = ctx.src.replace(`</script>`, code + `</script>`);
 
