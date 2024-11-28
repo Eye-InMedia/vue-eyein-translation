@@ -18,15 +18,19 @@ export default {
         app.provide(`_eTr`, _eTr);
         app.provide(`tr`, _eTr.tr);
         app.provide(`locale`, _eTr.locale);
+        app.provide(`locales`, _eTr.locales);
         app.provide(`setLocale`, _eTr.setLocale);
+        app.provide(`getLocale`, _eTr.getLocale);
+        app.provide(`getLocales`, _eTr.getLocales);
         app.provide(`loadLocale`, _eTr.loadLocale);
         app.provide(`staticTr`, compiledThrow);
 
         app.directive(`t`, {
-            bind: compiledThrow,
-            update: compiledThrow,
-            mounted: compiledThrow,
-            updated: compiledThrow
+            bind: _eTr.mountedUpdated,
+            update: _eTr.mountedUpdated,
+            mounted: _eTr.mountedUpdated,
+            updated: _eTr.mountedUpdated,
+            getSSRProps: _eTr.getSSRProps
         });
 
         app.component(`t`, TComponent);

@@ -13,21 +13,23 @@ export default {
             throw new Error(`Should never be called. Modified at compile time.`)
         }
 
-        app.directive(`t`, {
-            bind: compiledThrow,
-            update: compiledThrow,
-            mounted: compiledThrow,
-            updated: compiledThrow
-        });
-
         app.prototype._eTr = _eTr;
         app.prototype.tr = _eTr.tr;
         app.prototype.locale = _eTr.locale;
+        app.prototype.locales = _eTr.locales;
         app.prototype.getLocale = _eTr.getLocale;
         app.prototype.getLocales = _eTr.getLocales;
         app.prototype.setLocale = _eTr.setLocale;
         app.prototype.loadLocale = _eTr.loadLocale;
         app.prototype.staticTr = _eTr.staticTr;
+
+        app.directive(`t`, {
+            bind: _eTr.mountedUpdated,
+            update: _eTr.mountedUpdated,
+            mounted: _eTr.mountedUpdated,
+            updated: _eTr.mountedUpdated,
+            getSSRProps: _eTr.getSSRProps
+        });
 
         app.component(`t`, TComponent);
     }

@@ -1,4 +1,4 @@
-import {ref, reactive} from "vue"
+import {ref, computed} from "vue"
 import {applyFilter} from "./filters.js";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
@@ -19,81 +19,7 @@ export default {
         localeFilesPromises = ctx.localeFilesPromises;
     },
     locale: _eLocale,
-    tr(value, data = null) {
-        const locales = Object.keys(translations);
-
-        if (typeof value === `string`) {
-            if (value.startsWith(`@@`)) {
-                value = {id: value.replace(`@@`, ``)};
-            } else {
-                try {
-                    value = JSON.parse(value);
-                } catch {
-                    console.error(`Invalid translation format: ${value}`);
-                    return value;
-                }
-            }
-        }
-
-        const locale = _eLocale.value;
-        const shortLocale = locale.split(`-`).shift();
-
-        let result;
-        if (value.hasOwnProperty(locale) && value[locale]) {
-            // exact matching locale inside translation object
-            result = value[locale];
-        } else if (value.hasOwnProperty(shortLocale) && value[shortLocale]) {
-            // partial matching locale inside translation object (ex: fr-CA matches fr translation)
-            result = value[shortLocale];
-        } else if (value.id) {
-            if (translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id]) {
-                // exact matching locale using external locale file
-                result = translations[locale][value.id];
-            } else {
-                const similarLocale = locales.find(l => l.startsWith(shortLocale));
-
-                if (similarLocale && translations.hasOwnProperty(similarLocale)&& translations[similarLocale].hasOwnProperty(value.id) && translations[similarLocale][value.id]) {
-                    // partial matching locale using external locale file(ex: fr-CA matches fr translation)
-                    result = translations[similarLocale][value.id];
-                }
-            }
-        }
-
-        if (!result){
-            if (typeof value === `string`) {
-                return `Missing ${locale} translation for: ${value}`;
-            } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
-                return `Missing ${locale} translation for: ${value[`en-US`]}`;
-            } else if (value.id) {
-                return `Missing ${locale} translation for @@${value.id}`;
-            } else {
-                return `Missing ${locale} translation`;
-            }
-        }
-
-        if (!data && value.data) {
-            data = value.data;
-        } else if (!data) {
-            data = {};
-        }
-
-        // Replace double {{variable}} by single {variable}
-        result = result.replace(/\{\{(.+)}}/g, `{$1}`);
-
-        // Pluralization
-        result = pluralize(result, data, locale);
-
-        // Data binding
-        result = replaceDataBindings(result, data, locale, translations[locale]);
-
-        if (value.filters) {
-            for (const filter of value.filters) {
-                result = applyFilter(filter, result, locale, translations[locale]);
-            }
-        }
-
-        return result;
-    },
+    locales: computed(() => Object.keys(translations)),
     async setLocale(locale) {
         const locales = Object.keys(translations);
 
@@ -118,9 +44,87 @@ export default {
     },
     getLocales() {
         return Object.keys(translations);
-    }
+    },
+    tr: tr,
+    getSSRProps: getSSRProps,
+    mountedUpdated: mountedUpdated
 }
 
+export function tr(value, data = null) {
+    const locales = Object.keys(translations);
+
+    if (typeof value === `string`) {
+        if (value.startsWith(`@@`)) {
+            value = {id: value.replace(`@@`, ``)};
+        } else {
+            try {
+                value = JSON.parse(value);
+            } catch {
+                console.error(`Invalid translation format: ${value}`);
+                return value;
+            }
+        }
+    }
+
+    const locale = _eLocale.value;
+    const shortLocale = locale.split(`-`).shift();
+
+    let result;
+    if (value.hasOwnProperty(locale) && value[locale]) {
+        // exact matching locale inside translation object
+        result = value[locale];
+    } else if (value.hasOwnProperty(shortLocale) && value[shortLocale]) {
+        // partial matching locale inside translation object (ex: fr-CA matches fr translation)
+        result = value[shortLocale];
+    } else if (value.id) {
+        if (translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id]) {
+            // exact matching locale using external locale file
+            result = translations[locale][value.id];
+        } else {
+            const similarLocale = locales.find(l => l.startsWith(shortLocale));
+
+            if (similarLocale && translations.hasOwnProperty(similarLocale) && translations[similarLocale].hasOwnProperty(value.id) && translations[similarLocale][value.id]) {
+                // partial matching locale using external locale file(ex: fr-CA matches fr translation)
+                result = translations[similarLocale][value.id];
+            }
+        }
+    }
+
+    if (!result) {
+        if (typeof value === `string`) {
+            return `Missing ${locale} translation for: ${value}`;
+        } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
+            return `Missing ${locale} translation for: ${value[`en-US`]}`;
+        } else if (value.id) {
+            return `Missing ${locale} translation for @@${value.id}`;
+        } else {
+            return `Missing ${locale} translation`;
+        }
+    }
+
+    if (!data && value.data) {
+        data = value.data;
+    } else if (!data) {
+        data = {};
+    }
+
+    // Replace double {{variable}} by single {variable}
+    result = result.replace(/\{\{(.+)}}/g, `{$1}`);
+
+    // Pluralization
+    result = pluralize(result, data, locale);
+
+    // Data binding
+    result = replaceDataBindings(result, data, locale, translations[locale]);
+
+    if (value.filters) {
+        for (const filter of value.filters) {
+            result = applyFilter(filter, result, locale, translations[locale]);
+        }
+    }
+
+    return result;
+}
 
 async function loadLocale(locale) {
     try {
@@ -161,4 +165,42 @@ async function loadLocale(locale) {
     } catch (e) {
         console.error(e);
     }
+}
+
+export function getSSRProps(binding) {
+    console.log(binding);
+    if (!binding.arg) {
+        return;
+    }
+
+    if (!binding.value) {
+        return;
+    }
+
+    let ssrProps = {};
+
+    const locale = _eLocale.value;
+
+    let result = tr(binding.value, null);
+
+    const filters = Object.keys(binding.modifiers);
+    for (const filter of filters) {
+        result = applyFilter(filter, result, locale, translations[locale]);
+    }
+
+    ssrProps[binding.arg] = result;
+
+    return ssrProps;
+}
+
+export function mountedUpdated(el, binding) {
+    const ssrProps = getSSRProps(binding);
+    if (!ssrProps) {
+        return;
+    }
+
+    const attribute = Object.keys(ssrProps).pop();
+    const value = Object.values(ssrProps).pop();
+
+    el.setAttribute(attribute, value);
 }

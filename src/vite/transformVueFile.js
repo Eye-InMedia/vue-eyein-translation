@@ -261,7 +261,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
     let src = srcStr;
 
     if (!srcStr) {
-        throw new Error(`createTranslationObjectString srcStr is empty (context: ${context})`);
+        throw new Error(`[Eye-In Translation] createTranslationObjectString srcStr is empty (context: ${context})`);
     }
 
     // Custom id
@@ -278,7 +278,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
     tmp = src.split(`##`);
     let meaning = ``;
     if (tmp.length >= 3) {
-        throw new Error(`Error parsing translation "${srcStr}" more than 1 "##" found.`)
+        throw new Error(`[Eye-In Translation] Error parsing translation "${srcStr}" more than 1 "##" found.`)
     } else if (tmp.length === 2) {
         meaning = tmp[1];
         src = tmp[0];
@@ -360,7 +360,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             // change translation file if inline has been updated
             if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
                 if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline !== localeInlineTranslation) {
-                    throw new Error(`/!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
+                    throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
                 }
 
                 localeTranslation[translationId].target = localeInlineTranslation;
@@ -382,7 +382,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
         }
 
         if (ctx.options.warnMissingTranslations && !translationFound) {
-            console.warn(`Missing translation ${locale} @@${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
+            console.warn(`[Eye-In Translation] Missing translation ${locale} @@${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
         }
     }
 
