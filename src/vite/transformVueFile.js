@@ -310,8 +310,14 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
         const localeTranslation = groupId ? ctx.translations[locale][groupId] : ctx.translations[locale];
         const localeAdditionalTranslation = groupId ? ctx.additionalTranslations[locale][groupId] : ctx.additionalTranslations[locale];
 
+        const inlineLocaleIndex = inlineLocales.indexOf(locale);
+        let localeInlineTranslation = null;
+        if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex && inlineTranslations[inlineLocaleIndex]) {
+            localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
+        }
+
         if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
-            // if no translation found
+            // if no translation found anywhere
             const translation = {
                 source: translationSource,
                 target: ``,
@@ -342,7 +348,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             }
 
             updatedLocales.add(locale);
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (typeof localeTranslation[translationId] === `string` || localeTranslation[translationId].target)) {
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (typeof localeTranslation[translationId] === `string` || localeTranslation[translationId].target || localeInlineTranslation)) {
             // if complete translation found
             translationFound = true;
 
@@ -351,9 +357,9 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             }
             localeTranslation[translationId].last_update = new Date();
 
-            const inlineLocaleIndex = inlineLocales.indexOf(locale);
-            if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex && inlineTranslations[inlineLocaleIndex] && localeTranslation[translationId].target !== inlineTranslations[inlineLocaleIndex]) {
-                localeTranslation[translationId].target = inlineTranslations[inlineLocaleIndex];
+            // change translation file if inline has been updated
+            if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
+                localeTranslation[translationId].target = localeInlineTranslation;
                 updatedLocales.add(locale);
             }
         } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(translationId) && (typeof localeAdditionalTranslation[translationId] === `string` || localeAdditionalTranslation[translationId].target)) {
