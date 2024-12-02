@@ -44,7 +44,11 @@ export default async function viteEyeinTranslation(options = {}) {
                 srcUpdated = true;
             }
 
-            return srcUpdated ? src : null;
+            if (srcUpdated) {
+                return src;
+            } else {
+                return null;
+            }
         },
         async handleHotUpdate({file, server, modules, timestamp}) {
             if (!/\/locales\/.+\.locale/.test(file)) {

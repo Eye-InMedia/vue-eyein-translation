@@ -17,7 +17,7 @@ export default {
         app.config.globalProperties._eTr = _eTr
         app.provide(`_eTr`, _eTr);
         app.provide(`tr`, _eTr.tr);
-        app.provide(`tr`, _eTr.trComputed);
+        app.provide(`trComputed`, _eTr.trComputed);
         app.provide(`locale`, _eTr.locale);
         app.provide(`locales`, _eTr.locales);
         app.provide(`setLocale`, _eTr.setLocale);
