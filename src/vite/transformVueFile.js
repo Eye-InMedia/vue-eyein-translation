@@ -232,26 +232,27 @@ function transformJSTranslation(ctx) {
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.matchAll(/(this\.)?staticTr\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+    let allMatches = ctx.src.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
-        const line = findLineNumber(matches.indices[2], originalSrc);
+        const line = findLineNumber(matches.indices[3], originalSrc);
         const thisStr = matches[1] || ``;
-        const srcStr = matches[2];
+        const computedStr = matches[2] || ``;
+        const srcStr = matches[3];
         const context = `JS template literal at (${ctx.relativePath}:${line})`;
 
         let dataStr = ``;
-        if (matches.length > 3) {
-            dataStr = matches[3];
+        if (matches.length > 4) {
+            dataStr = matches[4];
         }
 
         const translationObjectString = createTranslationObjectString(ctx, srcStr, context, dataStr);
-        ctx.src = ctx.src.replace(fullMatch, `computed(() => ${thisStr}_eTr.tr(${translationObjectString}))`);
+        ctx.src = ctx.src.replace(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
         hasMatches = true;
     }
 
     if (hasMatches) {
-        ctx.src = injectTrComposable(ctx, true);
+        ctx.src = injectTrComposable(ctx);
     }
 
     return ctx.src;

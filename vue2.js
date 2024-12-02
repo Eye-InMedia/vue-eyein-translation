@@ -15,13 +15,15 @@ export default {
 
         app.prototype._eTr = _eTr;
         app.prototype.tr = _eTr.tr;
+        app.prototype.trComputed = _eTr.trComputed;
         app.prototype.locale = _eTr.locale;
         app.prototype.locales = _eTr.locales;
         app.prototype.getLocale = _eTr.getLocale;
         app.prototype.getLocales = _eTr.getLocales;
         app.prototype.setLocale = _eTr.setLocale;
         app.prototype.loadLocale = _eTr.loadLocale;
-        app.prototype.staticTr = _eTr.staticTr;
+        app.prototype.staticTr = compiledThrow;
+        app.prototype.staticTr = compiledThrow;
 
         app.directive(`t`, {
             bind: _eTr.mountedUpdated,

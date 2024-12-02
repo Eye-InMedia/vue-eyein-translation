@@ -60,11 +60,14 @@ export default {
         return Object.keys(translations);
     },
     tr: tr,
+    trComputed(value, data = null) {
+        return computed(() => tr(value, data, _eLocale.value));
+    },
     getSSRProps: getSSRProps,
     mountedUpdated: mountedUpdated
 }
 
-export function tr(value, data = null) {
+export function tr(value, data = null, locale = null) {
     const locales = Object.keys(translations);
 
     if (typeof value === `string`) {
@@ -80,7 +83,7 @@ export function tr(value, data = null) {
         }
     }
 
-    const locale = _eLocale.value;
+    locale ||= _eLocale.value;
     const shortLocale = locale.split(`-`).shift();
 
     let result;

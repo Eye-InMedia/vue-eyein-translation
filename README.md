@@ -257,10 +257,12 @@ const watchedRef = computed(() => tr(jsTranslationObject));
 
 #### Vue
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
+- `trComputed(translationObject, data = null)`: Returns a computed of the translation with current locale, value change reactively with locale change
 - `getLocales()`: Returns the list of available locales
 - `getLocale()`: Returns the current locale in use
 - `setLocale(locale)`: Change the current locale
-- `staticTr()`: Tells the compiler to generate a translation entry inside
+- `staticTr(translationInput)`: Tells the compiler to generate a translation entry inside
+- `staticTrComputed(translationInput)`: Tells the compiler to generate a translation entry and use `trComputed` as return value
 
 #### Nuxt composables
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
@@ -381,13 +383,22 @@ You can have only one translation for the work "ok" but use filter to change the
 - Data binding inside javascript:
 ```js
 let world = `world`;
-staticTr(`Hello {w}`, {w: world});
+const staticTranslation = staticTr(`Hello {w}`, {w: world});
+console.log(staticTranslation);
+
+const reactiveTranslation = staticTrComputed(`Hello {w}`, {w: world});
+console.log(reactiveTranslation.value); // computed() is used, beware of the .value !
 ```
 
 - Translation object:
 ```js
 let translationFromDatabase = {en: `Hello {w}`};
-console.log(this.tr(translationFromDatabase, {w: world}));
+
+const staticTranslation = this.tr(translationFromDatabase, {w: world});
+console.log(staticTranslation);
+
+const reactiveTranslation = this.trComputed(translationFromDatabase, {w: world});
+console.log(reactiveTranslation.value); // computed() is used, beware of the .value !
 ```
 
 ### Implicit Data binding
