@@ -1,4 +1,4 @@
-import {ref, computed} from "vue"
+import {ref, computed, watch} from "vue"
 import {applyFilter} from "./filters.js";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
@@ -6,6 +6,10 @@ import replaceDataBindings from "./replaceDataBindings.js";
 let localeFilesPromises = {};
 
 const _eLocale = ref("en-US");
+
+watch(_eLocale, async newLocale => {
+    await setLocale(newLocale);
+})
 
 let translations = {};
 let additionalLocalesDirs = []
@@ -17,6 +21,10 @@ export default {
         additionalLocalesDirs = ctx.additionalLocalesDirs;
         translations = ctx.translations;
         localeFilesPromises = ctx.localeFilesPromises;
+
+        if (!ctx.nuxt) {
+            _eLocale.value = detectUsedLocale();
+        }
     },
     getTranslations() {
         return translations;
@@ -34,24 +42,7 @@ export default {
     },
     locale: _eLocale,
     locales: computed(() => Object.keys(translations)),
-    async setLocale(locale) {
-        const locales = Object.keys(translations);
-
-        if (!locales.includes(locale)) {
-            console.warn(`Cannot change locale to ${locale} (available locales: ${locales.join(`, `)})`);
-            return;
-        }
-
-        if (Object.keys(translations[locale]).length === 0) {
-            await loadLocale(locale);
-        }
-
-        if (globalThis.localStorage) {
-            localStorage.setItem(`locale`, locale);
-        }
-
-        _eLocale.value = locale;
-    },
+    setLocale: setLocale,
     loadLocale: loadLocale,
     getLocale() {
         return _eLocale.value;
@@ -65,6 +56,24 @@ export default {
     },
     getSSRProps: getSSRProps,
     mountedUpdated: mountedUpdated
+}
+
+export async function setLocale(locale, reactiveAlreadyChanged = false) {
+    const locales = Object.keys(translations);
+    if (!locales.includes(locale)) {
+        console.warn(`Cannot change locale to ${locale} (available locales: ${locales.join(`, `)})`);
+        return;
+    }
+
+    if (Object.keys(translations[locale]).length === 0) {
+        await loadLocale(locale);
+    }
+
+    if (globalThis.localStorage) {
+        localStorage.setItem(`locale`, locale);
+    }
+
+    _eLocale.value = locale;
 }
 
 export function tr(value, data = null, locale = null) {
@@ -219,4 +228,50 @@ export function mountedUpdated(el, binding) {
     const value = Object.values(ssrProps).pop();
 
     el.setAttribute(attribute, value);
+}
+
+export function getNavigatorLocale() {
+    try {
+        const locales = Object.keys(translations);
+
+        if (!navigator) {
+            return locales[0];
+        }
+
+        const navigatorLanguage = navigator.language;
+        if (!navigatorLanguage) {
+            return locales[0];
+        }
+
+        let locale;
+        const acceptedLocales = navigatorLanguage.split(`,`);
+        for (const acceptedLocale of acceptedLocales) {
+            const l = acceptedLocale.split(`;`).shift();
+            if (locales.includes(l)) {
+                locale = l;
+                break;
+            }
+
+            if (l.length === 2) {
+                const similarLocale = locales.find(loc => loc.startsWith(l));
+                if (similarLocale) {
+                    locale = similarLocale;
+                    break;
+                }
+            }
+        }
+
+        return locale || locales[0];
+    } catch (e) {
+        console.error(e);
+        return `en-US`;
+    }
+}
+
+export function detectUsedLocale() {
+    if (!localStorage || !localStorage.getItem(`locale`)) {
+        return getNavigatorLocale();
+    }
+
+    return localStorage.getItem(`locale`);
 }

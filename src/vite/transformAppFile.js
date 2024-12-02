@@ -25,7 +25,6 @@ export default function transformAppFile(ctx) {
     }
 
     let importsPaths = {};
-
     for (const locale of ctx.options.locales) {
         const localeAbsolutePath = path.join(rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`);
         const localeLowercase = locale.replace(/-/g, ``).toLowerCase();
@@ -66,8 +65,13 @@ export default function transformAppFile(ctx) {
         translations: _eTrTranslations,
         assetsDir: "${ctx.options.assetsDir}",
         additionalLocalesDirs: ${JSON.stringify(ctx.options.additionalLocalesDirs)},
-        localeFilesPromises: _eTrLocaleFilesPromises
+        localeFilesPromises: _eTrLocaleFilesPromises,
+        nuxt: ${!!ctx.options.nuxt}
     });\n`;
+
+    if (ctx.nuxt) {
+        code += `const _eTrLocale = useLocale()\n`
+    }
 
     ctx.src = ctx.src.replace(/(<script.*>)/, `$1` + importsCode);
     ctx.src = ctx.src.replace(`</script>`, code + `</script>`);

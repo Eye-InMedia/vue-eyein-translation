@@ -11,7 +11,7 @@ export default defineNuxtModule({
         inlineLocales: `en-US`,
         assetsDir: `assets`,
         additionalLocalesDirs: [],
-        ignoreConfigFile: true,
+        appPath: `src/app.vue`,
         nuxt: true
     },
     setup(options, nuxt) {
