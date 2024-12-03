@@ -4,9 +4,9 @@
 </template>
 
 <script>
-import SimpleMarkdownParser from "../../vue/SimpleMarkdownParser.js";
-import {applyFilter, getAllFilters} from "../../vue/filters.js";
-import _eTr from "../../vue/_eTr.js";
+import SimpleMarkdownParser from "../js/SimpleMarkdownParser.js";
+import {applyFilter, getAllFilters} from "../js/filters.js";
+import _eTr from "../js/_eTr.js";
 
 const props = {
     value: {

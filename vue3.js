@@ -1,6 +1,6 @@
 import defaultOptions from "./src/defaultOptions.js";
 import TComponent from "./src/runtime/components/t.vue";
-import _eTr from "./src/vue/_eTr.js";
+import _eTr from "./src/runtime/js/_eTr.js";
 
 export default {
     install(app, options) {

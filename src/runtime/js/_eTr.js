@@ -33,6 +33,10 @@ export default {
         return translations[locale];
     },
     getLocaleOptions(locale) {
+        if (!translations.hasOwnProperty(locale)) {
+            return {};
+        }
+
         return Object.keys(translations[locale])
             .filter(key => key.startsWith(`$`))
             .reduce((obj, key) => {

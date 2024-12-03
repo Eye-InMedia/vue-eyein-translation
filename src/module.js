@@ -11,22 +11,22 @@ export default defineNuxtModule({
         inlineLocales: `en-US`,
         assetsDir: `assets`,
         additionalLocalesDirs: [],
-        appPath: `src/app.vue`,
+        appPath: `app.vue`,
         nuxt: true
     },
-    setup(options, nuxt) {
+    async setup(options, nuxt) {
         nuxt.options.runtimeConfig.public.vueEyeinTranslation = options
 
-        const resolver = createResolver(import.meta.url)
+        const {resolve} = createResolver(import.meta.url)
 
-        addComponent({
+        await addComponent({
             name: `t`,
-            filePath: resolver.resolve(`runtime/components/t.vue`)
+            filePath: resolve(`./runtime/components/t.vue`)
         })
 
-        addImportsDir(resolver.resolve('runtime/composables'))
+        addImportsDir(resolve('./runtime/composables'))
 
-        addPlugin(resolver.resolve(`./runtime/plugin`))
+        addPlugin(resolve(`./runtime/plugin`))
 
         addVitePlugin(viteEyeinTranslation(options));
     },

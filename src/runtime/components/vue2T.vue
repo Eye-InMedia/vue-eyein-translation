@@ -3,8 +3,8 @@
 </template>
 
 <script>
-import SimpleMarkdownParser from "../../vue/SimpleMarkdownParser.js";
-import {applyFilter, getAllFilters} from "../../vue/filters.js";
+import SimpleMarkdownParser from "../js/SimpleMarkdownParser.js";
+import {applyFilter, getAllFilters} from "../js/filters.js";
 
 const props = {
     value: {

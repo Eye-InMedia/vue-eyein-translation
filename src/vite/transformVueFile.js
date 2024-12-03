@@ -38,7 +38,7 @@ export default function transformVueFile(ctx) {
 }
 
 function injectTrComposable(ctx, injectComputed = false) {
-    if (!ctx.options.nuxt && !/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src)) {
+    if (!/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src)) {
         if (/import \{(.*)} from ['"]vue['"]/.test(ctx.src)) {
             ctx.src = ctx.src.replace(/import\s+\{(.*)}\s+from\s+['"]vue['"]/, `import \{$1, inject} from "vue"`);
         } else {
@@ -46,7 +46,7 @@ function injectTrComposable(ctx, injectComputed = false) {
         }
     }
 
-    if (injectComputed && !ctx.options.nuxt  && !/import \{.*computed.*} from ['"]vue['"]/.test(ctx.src)) {
+    if (injectComputed && !/import \{.*computed.*} from ['"]vue['"]/.test(ctx.src)) {
         ctx.src = ctx.src.replace(/import\s+\{(.*)}\s+from\s+['"]vue['"]/, `import \{$1, computed} from "vue"`);
     }
 
@@ -72,7 +72,7 @@ function injectTrComposable(ctx, injectComputed = false) {
         endOfImportsFound = true;
     }
 
-    if (!ctx.options.nuxt && !/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src)) {
+    if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src)) {
         setEndOfImportsIndex();
         ctx.src = ctx.src.substring(0, index) + `\nconst _eTr = inject('_eTr');\n` + ctx.src.substring(index);
     }
@@ -360,7 +360,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             // change translation file if inline has been updated
             if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
-                if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline !== localeInlineTranslation) {
+                if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline.trim() !== localeInlineTranslation.trim()) {
                     throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
                 }
 

@@ -69,7 +69,7 @@ export default function transformAppFile(ctx) {
         nuxt: ${!!ctx.options.nuxt}
     });\n`;
 
-    if (ctx.nuxt) {
+    if (ctx.options.nuxt) {
         code += `const _eTrLocale = useLocale()\n`
     }
 
