@@ -285,14 +285,17 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
         src = tmp[0];
     }
 
+    // inline translations
     const inlineLocales = ctx.options.inlineLocales.split(`||`);
     const inlineTranslations = src.split(`||`);
     const translationSource = inlineTranslations[0].trim();
 
+    // create translation id
     if (!translationId) {
         translationId = createTranslationId(translationSource + meaning);
     }
 
+    // detecting group
     let groupId = null;
     tmp = translationId.split(`.`);
     translationId = tmp.pop();
@@ -317,8 +320,21 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
         }
 
-        if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (!localeTranslation[translationId].contexts || !(localeTranslation[translationId].contexts instanceof Set))) {
-            localeTranslation[translationId].contexts = new Set();
+        // Managing contexts
+        if (ctx.hmr) {
+            // if we are in development with hot reloading, we don't remove contexts already there
+            if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
+                if (!localeTranslation[translationId].contexts) {
+                    localeTranslation[translationId].contexts = new Set();
+                } if (!(localeTranslation[translationId].contexts instanceof Set)) {
+                    localeTranslation[translationId].contexts = new Set(localeTranslation[translationId].contexts);
+                }
+            }
+        } else {
+            // if we are in build mode, we reset contexts to a new Set
+            if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (!localeTranslation[translationId].contexts || !(localeTranslation[translationId].contexts instanceof Set))) {
+                localeTranslation[translationId].contexts = new Set();
+            }
         }
 
         if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
@@ -330,6 +346,10 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
                 delete_when_unused: true
             };
 
+            if (meaning) {
+                translation.meaning = meaning;
+            }
+
             if (customIdUsed) {
                 translation.source ||= translationId;
             } else {
@@ -340,10 +360,6 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex) {
                 translation.target = inlineTranslations[inlineLocaleIndex];
                 translationFound = true;
-            }
-
-            if (meaning) {
-                translation.meaning = meaning;
             }
 
             if (groupId) {

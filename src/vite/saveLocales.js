@@ -45,14 +45,27 @@ export default async function saveLocales(ctx, localesToSave = null) {
         // Sort alphabetically locale object
         const entries = Object.entries(ctx.translations[locale]);
         entries.sort((a, b) => {
-            if (!a[1].source) {
-                return -1;
-            }
-            if (!b[1].source) {
-                return 1;
-            }
+            const aKey = a[0];
+            const bKey = b[0];
 
-            return a[1].source.localeCompare(b[1].source);
+            if (aKey.startsWith(`zz`) && bKey.startsWith(`zz`)) {
+                const aSource = typeof a[1] === `string` ? a[1] : a[1].source;
+                const bSource = typeof b[1] === `string` ? b[1] : b[1].source;
+                if (!aSource) {
+                    return -1;
+                }
+                if (!bSource) {
+                    return 1;
+                }
+
+                return aSource.localeCompare(bSource);
+            } else if (aKey.startsWith(`zz`)) {
+                return 1;
+            } else if (bKey.startsWith(`zz`)) {
+                return -1;
+            } else {
+                return aKey.localeCompare(bKey);
+            }
         });
 
         const ordered = Object.fromEntries(entries);
