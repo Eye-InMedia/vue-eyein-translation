@@ -317,7 +317,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
         const inlineLocaleIndex = inlineLocales.indexOf(locale);
         let localeInlineTranslation = null;
         if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex && inlineTranslations[inlineLocaleIndex]) {
-            localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
+            localeInlineTranslation = inlineTranslations[inlineLocaleIndex].trim();
         }
 
         // Managing contexts
@@ -358,7 +358,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             const inlineLocaleIndex = inlineLocales.indexOf(locale);
             if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex) {
-                translation.target = inlineTranslations[inlineLocaleIndex];
+                translation.target = localeInlineTranslation;
                 translationFound = true;
             }
 
