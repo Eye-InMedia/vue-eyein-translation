@@ -35,7 +35,7 @@ export default function useLocale() {
     }
 
     localeState.value = locale;
-    nuxtApp.vueApp.config.globalProperties._eTr.locale.value = localeState.value;
+    nuxtApp.vueApp.config.globalProperties._eTr.setLocale(locale);
 
     watch(localeState, async (newLocale, oldLocale) => {
         nuxtApp.vueApp.config.globalProperties._eTr.setLocale(newLocale);
