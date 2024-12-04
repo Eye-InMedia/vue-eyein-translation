@@ -6,10 +6,12 @@
             <option value="es-ES">Español</option>
         </select>
         <div title="Test EN||Test FR" v-t:title>
-            <t>Test translation23||Traduction de test</t>
+            <t>Test translation||Traduction de test</t>
         </div>
-<!--        <div title.t="Title: {hello}||Titre: {hello}">{{ test }}</div>-->
-<!--        <div>{{ test2 }}</div>-->
+        <div><t>B||B2</t></div>
+        <div><t>C||C2</t></div>
+        <div><t>A||A2</t></div>
+        <div><t>D||D2</t></div>
     </main>
 </template>
 

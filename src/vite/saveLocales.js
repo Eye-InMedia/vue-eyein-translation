@@ -33,11 +33,29 @@ export default async function saveLocales(ctx, localesToSave = null) {
         const rootDir = process.cwd().replace(/\\/g, `/`);
         const localePath = path.join(rootDir, ctx.options.assetsDir, `locales/${locale}.locale`);
 
+        for (const translationId in ctx.translations[locale]) {
+            delete ctx.translations[locale][translationId].last_update;
+            delete ctx.translations[locale][translationId].last_inline;
+            delete ctx.translations[locale][translationId].context;
+            if (ctx.translations[locale][translationId].contexts) {
+                ctx.translations[locale][translationId].contexts = [...ctx.translations[locale][translationId].contexts].toSorted();
+            }
+        }
+
         // Sort alphabetically locale object
-        const ordered = Object.keys(ctx.translations[locale]).sort().reduce((obj, key) => {
-            obj[key] = ctx.translations[locale][key];
-            return obj;
-        }, {});
+        const entries = Object.entries(ctx.translations[locale]);
+        entries.sort((a, b) => {
+            if (!a[1].source) {
+                return -1;
+            }
+            if (!b[1].source) {
+                return 1;
+            }
+
+            return a[1].source.localeCompare(b[1].source);
+        });
+
+        const ordered = Object.fromEntries(entries);
 
         console.log(`Saving ${locale} translation files...`);
         fs.writeFileSync(localePath, JSON.stringify(ordered, null, `    `), {encoding: `utf-8`});

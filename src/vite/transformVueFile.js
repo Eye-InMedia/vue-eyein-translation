@@ -317,6 +317,10 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
         }
 
+        if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (!localeTranslation[translationId].contexts || !(localeTranslation[translationId].contexts instanceof Set))) {
+            localeTranslation[translationId].contexts = new Set();
+        }
+
         if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
             // if no translation found anywhere
             const translation = {
@@ -329,7 +333,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             if (customIdUsed) {
                 translation.source ||= translationId;
             } else {
-                translation.context = context;
+                translation.contexts = new Set([context]);
             }
 
             const inlineLocaleIndex = inlineLocales.indexOf(locale);
@@ -354,7 +358,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             translationFound = true;
 
             if (!customIdUsed) {
-                localeTranslation[translationId].context = context;
+                localeTranslation[translationId].contexts.add(context);
             }
             localeTranslation[translationId].last_update = new Date();
 
@@ -377,7 +381,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
         } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
             // translation incomplete found update context
             if (!customIdUsed) {
-                localeTranslation[translationId].context = context;
+                localeTranslation[translationId].contexts.add(context);
             }
             localeTranslation[translationId].last_update = new Date();
         }
