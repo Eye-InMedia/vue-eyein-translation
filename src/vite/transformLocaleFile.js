@@ -22,5 +22,6 @@ export default function transformLocaleFile(ctx) {
         }
     }
 
-    return `const locale = ${JSON.stringify(result)}; export default locale;`;
+    const code = `const locale = ${JSON.stringify(result)}; export default locale;`;
+    return {code: code};
 }

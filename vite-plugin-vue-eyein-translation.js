@@ -32,25 +32,18 @@ export default async function viteEyeinTranslation(options = {}) {
         transform(src, fileId) {
             const appFileId = path.join(process.cwd(), options.appPath).replace(/\\/g, `/`);
 
-            let srcUpdated = false;
+            let result = null;
             if (appFileId === fileId) {
-                src = transformAppFile({options, fileId, src, hmr});
-                srcUpdated = true;
+                result = transformAppFile({options, fileId, src, hmr});
             }
 
             if (/\.vue$/.test(fileId)) {
-                src = transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
-                srcUpdated = true;
+                result = transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
-                src = transformLocaleFile({options, fileId, src, hmr});
-                srcUpdated = true;
+                result = transformLocaleFile({options, fileId, src, hmr});
             }
 
-            if (srcUpdated) {
-                return src;
-            } else {
-                return null;
-            }
+            return result;
         },
         async handleHotUpdate({file, server, modules, timestamp}) {
             if (!/\/locales\/.+\.locale/.test(file)) {

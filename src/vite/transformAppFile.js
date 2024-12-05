@@ -108,7 +108,7 @@ export default function transformAppFile(ctx) {
 
     // console.log(ctx.src);
 
-    return ctx.src;
+    return {code: ctx.src};
 }
 
 function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {
