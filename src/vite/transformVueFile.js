@@ -342,7 +342,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             const translation = {
                 source: translationSource,
                 target: ``,
-                last_update: new Date(),
+                found: true,
                 delete_when_unused: true
             };
 
@@ -376,7 +376,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             if (!customIdUsed) {
                 localeTranslation[translationId].contexts.add(context);
             }
-            localeTranslation[translationId].last_update = new Date();
+            localeTranslation[translationId].found = true;
 
             // change translation file if inline has been updated
             if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
@@ -399,7 +399,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             if (!customIdUsed) {
                 localeTranslation[translationId].contexts.add(context);
             }
-            localeTranslation[translationId].last_update = new Date();
+            localeTranslation[translationId].found = true;
         }
 
         if (ctx.options.warnMissingTranslations && !translationFound) {

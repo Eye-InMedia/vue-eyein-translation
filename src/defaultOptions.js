@@ -6,5 +6,6 @@ export default {
     additionalLocalesDirs: [],
     purgeOldTranslations: true,
     warnMissingTranslations: true,
+    debug: false,
     autoTranslate: {}
 }

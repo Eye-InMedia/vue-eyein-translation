@@ -1,8 +1,11 @@
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 
 export default async function saveLocales(ctx, localesToSave = null) {
-    console.log(`Saving translation files...`);
+    if (ctx.options.debug) {
+        console.log(`Saving translation files...`, ctx.hmr, localesToSave);
+    }
 
     for (const locale of ctx.options.locales) {
         if (localesToSave && !localesToSave.includes(locale)) {
@@ -12,8 +15,8 @@ export default async function saveLocales(ctx, localesToSave = null) {
         if (!ctx.hmr) {
             if (ctx.options.purgeOldTranslations) {
                 for (const translationId in ctx.translations[locale]) {
-                    if (typeof ctx.translations[locale][translationId].last_update !== `object` && ctx.translations[locale][translationId].delete_when_unused) {
-                        console.warn(`Deleting removed ${locale} translation (id: ${translationId}): ${ctx.translations[locale][translationId].source}`)
+                    if (!ctx.translations[locale][translationId].found && ctx.translations[locale][translationId].delete_when_unused) {
+                        console.warn(`Deleting removed ${locale} translation (id: ${translationId}): ${ctx.translations[locale][translationId].source}`);
                         delete ctx.translations[locale][translationId];
                     }
                 }
@@ -26,8 +29,8 @@ export default async function saveLocales(ctx, localesToSave = null) {
                     console.error(e);
                 }
             }
-        } else {
-            console.warn(`Skipping purge and auto translation in dev mode...`);
+        } else if (ctx.options.debug) {
+            console.log(`Skipping purge and auto translation in dev mode...`);
         }
 
         const rootDir = process.cwd().replace(/\\/g, `/`);
@@ -38,6 +41,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
             delete ctx.translations[locale][translationId].last_update;
             delete ctx.translations[locale][translationId].last_inline;
             delete ctx.translations[locale][translationId].context;
+            delete ctx.translations[locale][translationId].found;
             if (ctx.translations[locale][translationId].contexts) {
                 ctx.translations[locale][translationId].contexts = [...ctx.translations[locale][translationId].contexts].toSorted();
             }

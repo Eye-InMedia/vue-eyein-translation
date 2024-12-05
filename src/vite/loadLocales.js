@@ -2,7 +2,9 @@ import fs from "fs";
 import path from "path";
 
 export default async function loadLocales(ctx) {
-    console.log(`[Eye-In Translation] Loading locales...`);
+    if (ctx.options.debug) {
+        console.log(`[Eye-In Translation] Loading locales...`);
+    }
 
     let translations = {};
     let additionalTranslations = {};
@@ -25,14 +27,18 @@ export default async function loadLocales(ctx) {
         }
 
         translations[locale] = JSON.parse(fs.readFileSync(localePath, {encoding: `utf-8`}));
-        console.log(`[Eye-In Translation] ${localePath} loaded.`);
+        if (ctx.options.debug) {
+            console.log(`[Eye-In Translation] ${localePath} loaded.`);
+        }
 
         for (const additionalDir of ctx.options.additionalLocalesDirs) {
             const additionalLocalePath = path.join(rootDir, additionalDir, `${locale}.locale`);
 
             if (fs.existsSync(additionalLocalePath)) {
                 additionalTranslations[locale] = JSON.parse(fs.readFileSync(additionalLocalePath, {encoding: `utf-8`}));
-                console.log(`[Eye-In Translation] ${additionalLocalePath} loaded.`);
+                if (ctx.options.debug) {
+                    console.log(`[Eye-In Translation] ${additionalLocalePath} loaded.`);
+                }
             }
         }
     }
