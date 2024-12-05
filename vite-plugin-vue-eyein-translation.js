@@ -35,6 +35,7 @@ export default async function viteEyeinTranslation(options = {}) {
             let result = null;
             if (appFileId === fileId) {
                 result = transformAppFile({options, fileId, src, hmr});
+                src = result.code;
             }
 
             if (/\.vue$/.test(fileId)) {
