@@ -97,7 +97,6 @@ export default async function saveLocales(ctx, localesToSave = null) {
     }
 }
 
-
 async function autoTranslateLocale(ctx, locale) {
     const sourceLocale = ctx.options.inlineLocales.split(`||`).shift();
 

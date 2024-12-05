@@ -20,6 +20,13 @@ export default function transformVueFile(ctx) {
     // console.log(`transformVueFile`, ctx.fileId);
 
     ctx.relativePath = ctx.fileId.replace(rootDir, ``);
+    ctx.currentFileTranslations = {};
+
+    for (const locale of ctx.options.locales) {
+        if (!ctx.currentFileTranslations.hasOwnProperty(locale)) {
+            ctx.currentFileTranslations[locale] = {};
+        }
+    }
 
     ctx.src = transformTranslationComponents(ctx);
     ctx.src = transformTranslationSimpleAttributes(ctx);
@@ -340,7 +347,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             const inlineLocaleIndex = inlineLocales.indexOf(locale);
             if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex) {
-                addFileInlineTranslation(translationId, translation, ctx.fileId, localeInlineTranslation, context);
+                addFileInlineTranslation(ctx, translationId, locale, translation, localeInlineTranslation, context);
                 translationFound = true;
             }
 
@@ -362,7 +369,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
                 if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline.trim() !== localeInlineTranslation.trim()) {
                     throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
                 }
-                addFileInlineTranslation(translationId, localeTranslation[translationId], ctx.fileId, localeInlineTranslation, context);
+                addFileInlineTranslation(ctx, translationId, locale, localeTranslation[translationId], localeInlineTranslation, context);
                 updatedLocales.add(locale);
 
                 if (!ctx.hmr) {
@@ -410,28 +417,50 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
     return json;
 }
 
-function addFileInlineTranslation(translationId, translationObject, fileId, localeTranslation, context) {
+function addFileInlineTranslation(ctx, translationId, locale, translationObject, localeTranslation, context) {
+    translationObject.target = localeTranslation;
+
+    if (!ctx.hmr) {
+        return;
+    }
+
     if (!translationObject.hasOwnProperty(`files`)) {
         translationObject.files = {};
     }
 
-    translationObject.target = localeTranslation;
-    translationObject.files[fileId] = {
+    if (!ctx.currentFileTranslations[locale].hasOwnProperty(translationId)) {
+        ctx.currentFileTranslations[locale][translationId] = [];
+    }
+
+
+    let hasError = false;
+    let errorMessage = `[Eye-In Translation] Duplicate translations with same ID (${translationId}) but with different target translation for source "${translationObject.source}":\n`;
+    errorMessage += `  - "${localeTranslation}" ${context.replace(` at (`, `\nat (`)}\n`;
+    for (const fileId in translationObject.files) {
+        if (fileId !== ctx.fileId && translationObject.files[fileId].target !== localeTranslation) {
+            hasError = true;
+            errorMessage += `  - "${translationObject.files[fileId].target}" ${translationObject.files[fileId].context.replace(` at (`, `\nat (`)}\n`;
+        }
+    }
+
+    translationObject.files[ctx.fileId] = {
         target: localeTranslation,
         context
     };
 
-    let hasError = false;
-    let errorMessage = `[Eye-In Translation] Duplicate translations with same ID (${translationId}) but with different target translation for source "${translationObject.source}":\n`;
-    errorMessage += `  - "${localeTranslation}" ${context.replace(` at (`, `\nat (`)}\n`
-    for (const file in translationObject.files) {
-        if (translationObject.files[file].target !== localeTranslation) {
+    for (const translation of ctx.currentFileTranslations[locale][translationId]) {
+        if (translation.target !== localeTranslation) {
             hasError = true;
-            errorMessage += `  - "${translationObject.files[file].target}" ${translationObject.files[file].context.replace(` at (`, `\nat (`)}\n`
+            errorMessage += `  - "${translation.target}" ${translation.context.replace(` at (`, `\nat (`)}\n`;
         }
     }
 
-    errorMessage += `If these translations are meant to be different, you should use the "meaning" syntax: String to translate||Another inline locale##short description/context destined to the translator\n`
+    ctx.currentFileTranslations[locale][translationId].push({
+        target: localeTranslation,
+        context
+    })
+
+    errorMessage += `If these translations are meant to be different, you should use the "meaning" syntax: String to translate||Another inline locale##short description/context destined to the translator\n`;
 
     if (hasError) {
         console.error(errorMessage);
