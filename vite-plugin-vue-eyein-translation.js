@@ -12,12 +12,14 @@ export default async function viteEyeinTranslation(options = {}) {
     let config;
     let translations;
     let additionalTranslations;
+    let hmr = false;
 
     return {
         name: `vite-plugin-vue-eyein-translation`,
         enforce: `pre`,
         configResolved(resolvedConfig) {
             config = resolvedConfig;
+            hmr = config.command === `serve`;
         },
         async buildStart() {
             const result = await loadLocales({options});
@@ -25,22 +27,22 @@ export default async function viteEyeinTranslation(options = {}) {
             additionalTranslations = result.additionalTranslations;
         },
         async buildEnd() {
-            await saveLocales({options, translations, additionalTranslations, hmr: false});
+            await saveLocales({options, translations, additionalTranslations, hmr});
         },
         transform(src, fileId) {
             const appFileId = path.join(process.cwd(), options.appPath).replace(/\\/g, `/`);
 
             let srcUpdated = false;
             if (appFileId === fileId) {
-                src = transformAppFile({options, fileId, src, hmr: config.command === `serve`});
+                src = transformAppFile({options, fileId, src, hmr});
                 srcUpdated = true;
             }
 
             if (/\.vue$/.test(fileId)) {
-                src = transformVueFile({options, translations, additionalTranslations, fileId, src, hmr: config.command === `serve`});
+                src = transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
                 srcUpdated = true;
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
-                src = transformLocaleFile({options, fileId, src, hmr: config.command === `serve`});
+                src = transformLocaleFile({options, fileId, src, hmr});
                 srcUpdated = true;
             }
 
