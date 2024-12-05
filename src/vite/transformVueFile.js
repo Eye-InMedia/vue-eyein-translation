@@ -320,23 +320,6 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             localeInlineTranslation = inlineTranslations[inlineLocaleIndex].trim();
         }
 
-        // Managing contexts
-        if (ctx.hmr) {
-            // if we are in development with hot reloading, we don't remove contexts already there
-            if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
-                if (!localeTranslation[translationId].contexts) {
-                    localeTranslation[translationId].contexts = new Set();
-                } if (!(localeTranslation[translationId].contexts instanceof Set)) {
-                    localeTranslation[translationId].contexts = new Set(localeTranslation[translationId].contexts);
-                }
-            }
-        } else {
-            // if we are in build mode, we reset contexts to a new Set
-            if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (!localeTranslation[translationId].contexts || !(localeTranslation[translationId].contexts instanceof Set))) {
-                localeTranslation[translationId].contexts = new Set();
-            }
-        }
-
         if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
             // if no translation found anywhere
             const translation = {
@@ -352,8 +335,6 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             if (customIdUsed) {
                 translation.source ||= translationId;
-            } else {
-                translation.contexts = new Set([context]);
             }
 
             const inlineLocaleIndex = inlineLocales.indexOf(locale);
@@ -373,9 +354,6 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             // if complete translation found
             translationFound = true;
 
-            if (!customIdUsed) {
-                localeTranslation[translationId].contexts.add(context);
-            }
             localeTranslation[translationId].found = true;
 
             // change translation file if inline has been updated
@@ -395,10 +373,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
             // if complete additional translation found
             translationFound = true;
         } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
-            // translation incomplete found update context
-            if (!customIdUsed) {
-                localeTranslation[translationId].contexts.add(context);
-            }
+            // translation incomplete found
             localeTranslation[translationId].found = true;
         }
 

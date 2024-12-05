@@ -41,6 +41,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
             delete ctx.translations[locale][translationId].last_update;
             delete ctx.translations[locale][translationId].last_inline;
             delete ctx.translations[locale][translationId].context;
+            delete ctx.translations[locale][translationId].contexts;
             delete ctx.translations[locale][translationId].found;
             if (ctx.translations[locale][translationId].contexts) {
                 ctx.translations[locale][translationId].contexts = [...ctx.translations[locale][translationId].contexts].toSorted();
