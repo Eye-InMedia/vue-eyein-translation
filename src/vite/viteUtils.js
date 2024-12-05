@@ -51,3 +51,27 @@ export function findLineNumber(indices, src) {
 
     return -1;
 }
+
+export function getEndOfImportsIndex(src) {
+    const allImportsMatches = [...src.matchAll(/^\s*import\s+.*$/gmd)];
+    if (!allImportsMatches || allImportsMatches.length === 0) {
+        return -1;
+    }
+    const lastImportMatch = allImportsMatches.pop();
+    return lastImportMatch.indices[0][1];
+}
+
+export function getVueEndOfImportsIndex(src) {
+    const scriptRegex = /<script.*>/g;
+    if (!scriptRegex.test(src)) {
+        return -1;
+    }
+
+    let index = scriptRegex.lastIndex;
+    const endOfImportsIndex = getEndOfImportsIndex(src);
+    if (endOfImportsIndex) {
+        index = endOfImportsIndex;
+    }
+
+    return index;
+}

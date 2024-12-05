@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import {getVueEndOfImportsIndex} from "./viteUtils.js";
 
 const rootDir = process.cwd();
 
@@ -69,6 +70,10 @@ export default function transformAppFile(ctx) {
         nuxt: ${!!ctx.options.nuxt}
     });\n`;
 
+    if (ctx.options.nuxt) {
+        code += `setLocaleWatcher()\n`
+    }
+
     if (ctx.hmr) {
         code += `
         if (import.meta.hot) {
@@ -91,12 +96,15 @@ export default function transformAppFile(ctx) {
         `;
     }
 
-    if (ctx.options.nuxt) {
-        code += `const _eTrLocale = useLocale()\n`
-    }
-
     ctx.src = ctx.src.replace(/(<script.*>)/, `$1` + importsCode);
-    ctx.src = ctx.src.replace(`</script>`, code + `</script>`);
+
+    const index = getVueEndOfImportsIndex(ctx.src);
+
+    if (index >= 0) {
+        ctx.src = ctx.src.slice(0, index) + `\n` + code + ctx.src.slice(index);
+    } else {
+        ctx.src = ctx.src.replace(`</script>`, code + `</script>`);
+    }
 
     // console.log(ctx.src);
 

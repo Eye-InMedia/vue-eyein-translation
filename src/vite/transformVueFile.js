@@ -1,4 +1,4 @@
-import {createTranslationId, debounce, findLineNumber} from "./viteUtils.js";
+import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex, getVueEndOfImportsIndex} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
 const rootDir = process.cwd().replace(/\\/g, `/`);
@@ -63,24 +63,13 @@ function injectTrComposable(ctx, injectComputed = false) {
     }
 
     let index = setupRegex.lastIndex;
-    let endOfImportsFound = false;
 
-    function setEndOfImportsIndex() {
-        if (endOfImportsFound) {
-            return;
-        }
-        const allImportsMatches = [...ctx.src.matchAll(/^\s*import\s+.*$/gmd)];
-        if (!allImportsMatches || allImportsMatches.length === 0) {
-            endOfImportsFound = true;
-            return;
-        }
-        const lastImportMatch = allImportsMatches.pop();
-        index = lastImportMatch.indices[0][1];
-        endOfImportsFound = true;
+    const endOfImportsIndex = getEndOfImportsIndex(ctx.src);
+    if (endOfImportsIndex >= 0) {
+        index = endOfImportsIndex;
     }
 
     if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src)) {
-        setEndOfImportsIndex();
         ctx.src = ctx.src.substring(0, index) + `\nconst _eTr = inject('_eTr');\n` + ctx.src.substring(index);
     }
 
