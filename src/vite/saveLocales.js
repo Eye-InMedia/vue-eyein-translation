@@ -33,6 +33,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
         const rootDir = process.cwd().replace(/\\/g, `/`);
         const localePath = path.join(rootDir, ctx.options.assetsDir, `locales/${locale}.locale`);
 
+        const fingerprintArray = [];
         for (const translationId in ctx.translations[locale]) {
             delete ctx.translations[locale][translationId].last_update;
             delete ctx.translations[locale][translationId].last_inline;
@@ -40,6 +41,8 @@ export default async function saveLocales(ctx, localesToSave = null) {
             if (ctx.translations[locale][translationId].contexts) {
                 ctx.translations[locale][translationId].contexts = [...ctx.translations[locale][translationId].contexts].toSorted();
             }
+
+            fingerprintArray.push(translationId + ctx.translations[locale][translationId].target)
         }
 
         // Sort alphabetically locale object
@@ -69,9 +72,22 @@ export default async function saveLocales(ctx, localesToSave = null) {
         });
 
         const ordered = Object.fromEntries(entries);
+        ordered.$fingerprint = crypto.createHash(`md5`).update(fingerprintArray.toSorted().join(`#`)).digest(`hex`)
 
+        if (fs.existsSync(localePath)) {
+            const oldLocaleFileContent = JSON.parse(fs.readFileSync(localePath, {encoding: `utf8`}));
+
+            if (oldLocaleFileContent.$fingerprint === ordered.$fingerprint) {
+                if (ctx.options.debug) {
+                    console.log(`Locale ${locale} fingerprint is the same.`);
+                }
+                return;
+            }
+        }
+
+        const newLocaleFileContent = JSON.stringify(ordered, null, `    `);
         console.log(`Saving ${locale} translation files...`);
-        fs.writeFileSync(localePath, JSON.stringify(ordered, null, `    `), {encoding: `utf-8`});
+        fs.writeFileSync(localePath, newLocaleFileContent, {encoding: `utf-8`});
     }
 }
 
