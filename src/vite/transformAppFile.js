@@ -69,6 +69,28 @@ export default function transformAppFile(ctx) {
         nuxt: ${!!ctx.options.nuxt}
     });\n`;
 
+    if (ctx.hmr) {
+        code += `
+        if (import.meta.hot) {
+            const locales = ${JSON.stringify(Object.keys(importsPaths))};
+            import.meta.hot.accept(${JSON.stringify(Object.values(importsPaths))}, modules => {
+                let i = 0;
+                for (const module of modules) {
+                    const locale = locales[i];
+                    i++;
+                    if (!module) {
+                        continue;
+                    }
+
+                    for (const key in module.default) {
+                        _eTrTranslations[locale][key] = module.default[key];
+                    }
+                }
+            });
+        }
+        `;
+    }
+
     if (ctx.options.nuxt) {
         code += `const _eTrLocale = useLocale()\n`
     }
