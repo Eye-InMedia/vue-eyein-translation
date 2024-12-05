@@ -116,7 +116,7 @@ function transformTranslationSimpleAttributes(ctx) {
     while (matchesLength > 0 && i < 10) {
         i++;
         matchesLength = 0;
-        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t=['"](.+?)['"])[^<>]*?>/sdg);
+        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t="(.+?)")[^<>]*?>/sdg);
 
         for (const matches of allMatches) {
             matchesLength++;
