@@ -71,7 +71,7 @@ export default function transformAppFile(ctx) {
     });\n`;
 
     if (ctx.options.nuxt) {
-        code += `setLocaleWatcher();\n`
+        code += `useLocale();\nsetLocaleWatcher();\n`
     }
 
     if (ctx.hmr) {
