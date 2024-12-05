@@ -326,7 +326,8 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
                 source: translationSource,
                 target: ``,
                 found: true,
-                delete_when_unused: true
+                delete_when_unused: true,
+                files: {}
             };
 
             if (meaning) {
@@ -339,7 +340,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
 
             const inlineLocaleIndex = inlineLocales.indexOf(locale);
             if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex) {
-                translation.target = localeInlineTranslation;
+                addFileInlineTranslation(translationId, translation, ctx.fileId, localeInlineTranslation, context);
                 translationFound = true;
             }
 
@@ -361,8 +362,7 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
                 if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline.trim() !== localeInlineTranslation.trim()) {
                     throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
                 }
-
-                localeTranslation[translationId].target = localeInlineTranslation;
+                addFileInlineTranslation(translationId, localeTranslation[translationId], ctx.fileId, localeInlineTranslation, context);
                 updatedLocales.add(locale);
 
                 if (!ctx.hmr) {
@@ -408,4 +408,32 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
     }
 
     return json;
+}
+
+function addFileInlineTranslation(translationId, translationObject, fileId, localeTranslation, context) {
+    if (!translationObject.hasOwnProperty(`files`)) {
+        translationObject.files = {};
+    }
+
+    translationObject.target = localeTranslation;
+    translationObject.files[fileId] = {
+        target: localeTranslation,
+        context
+    };
+
+    let hasError = false;
+    let errorMessage = `[Eye-In Translation] Duplicate translations with same ID (${translationId}) but with different target translation for source "${translationObject.source}":\n`;
+    errorMessage += `  - "${localeTranslation}" ${context.replace(` at (`, `\nat (`)}\n`
+    for (const file in translationObject.files) {
+        if (translationObject.files[file].target !== localeTranslation) {
+            hasError = true;
+            errorMessage += `  - "${translationObject.files[file].target}" ${translationObject.files[file].context.replace(` at (`, `\nat (`)}\n`
+        }
+    }
+
+    errorMessage += `If these translations are meant to be different, you should use the "meaning" syntax: String to translate||Another inline locale##short description/context destined to the translator\n`
+
+    if (hasError) {
+        console.error(errorMessage);
+    }
 }
