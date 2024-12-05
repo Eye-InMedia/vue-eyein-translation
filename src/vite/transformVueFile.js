@@ -145,7 +145,7 @@ function transformTranslationAttributes(ctx) {
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:=['"](.+?)['"])?)[^<>]*?>/sdg);
+    let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:="(.+?)")?)[^<>]*?>/sdg);
     for (const matches of allMatches) {
         let fullMatch = matches[0];
         const tagName = matches[1];
@@ -183,7 +183,7 @@ function transformTranslationAttributes(ctx) {
     while (matchesLength > 0 && i < 10) {
         i++;
         matchesLength = 0;
-        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:=['"](.+?)['"])?)[^<>]*?>/sdg);
+        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:="(.+?)")?)[^<>]*?>/sdg);
 
         for (const matches of allMatches) {
             matchesLength++;
