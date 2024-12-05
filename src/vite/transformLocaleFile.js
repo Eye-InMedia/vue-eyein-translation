@@ -3,17 +3,21 @@ export default function transformLocaleFile(ctx) {
 
     const json = JSON.parse(ctx.src);
     let result = {};
-    for (const groupId in json) {
-        if (groupId.startsWith(`$`)) {
-            result[groupId] = json[groupId];
+    for (const key in json) {
+        if (key === `$fingerprint`) {
             continue;
         }
 
-        if (typeof json[groupId] === `string` || json[groupId].hasOwnProperty(`target`)) {
-            result[groupId] = typeof json[groupId] === `string` ? json[groupId] : json[groupId].target;
+        if (key.startsWith(`$`)) {
+            result[key] = json[key];
+            continue;
+        }
+
+        if (typeof json[key] === `string` || json[key].hasOwnProperty(`target`)) {
+            result[key] = typeof json[key] === `string` ? json[key] : json[key].target;
         } else {
-            for (const translationId in json[groupId]) {
-                result[`${groupId}.${translationId}`] = typeof json[groupId][translationId] === `string` ? json[groupId][translationId] : json[groupId][translationId].target;
+            for (const translationId in json[key]) {
+                result[`${key}.${translationId}`] = typeof json[key][translationId] === `string` ? json[key][translationId] : json[key][translationId].target;
             }
         }
     }
