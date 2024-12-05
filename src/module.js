@@ -15,7 +15,7 @@ export default defineNuxtModule({
         nuxt: true
     },
     async setup(options, nuxt) {
-        nuxt.options.runtimeConfig.public.vueEyeinTranslation = options
+        nuxt.options.runtimeConfig.public.vueEyeinTranslation = JSON.parse(JSON.stringify(options));
 
         const {resolve} = createResolver(import.meta.url)
 
