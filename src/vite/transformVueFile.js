@@ -88,8 +88,8 @@ function transformTranslationComponents(ctx) {
         const dataStr = matches[2] ? matches[2] : ``;
         const srcStr = matches[3];
         const line = findLineNumber(matches.indices[3], originalSrc);
-        const context = `<t> tag at (${ctx.relativePath}:${line})`;
-        const translationObjectString = createTranslationObjectString(ctx, srcStr, context, dataStr);
+        const location = `<t> tag at (${ctx.relativePath}:${line})`;
+        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
         ctx.src = ctx.src.replace(fullMatch, `<t ${propsStr} :value="${translationObjectString}"></t>`);
         hasMatches = true;
     }
@@ -121,9 +121,9 @@ function transformTranslationSimpleAttributes(ctx) {
             const attribute = matches[3];
             const srcStr = matches[4];
             const line = findLineNumber(matches.indices[3], originalSrc);
-            const context = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
+            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
 
-            const translationObjectString = createTranslationObjectString(ctx, srcStr, context);
+            const translationObjectString = createTranslationObjectString(ctx, srcStr, location);
             ctx.src = ctx.src.replace(fullAttribute, `:${attribute}="_eTr.tr(${translationObjectString})"`);
             hasMatches = true;
         }
@@ -158,14 +158,14 @@ function transformTranslationAttributes(ctx) {
         }
 
         for (const attribute of attributes) {
-            const context = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
+            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
 
             const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
             const result = fullMatch.match(attributeRegex);
 
             if (result && result.length >= 2) {
                 const srcStr = result[1] || result[2];
-                const translationObjectString = createTranslationObjectString(ctx, srcStr, context, dataStr);
+                const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
                 ctx.src = ctx.src.replace(fullMatch, newTag);
                 hasMatches = true;
@@ -199,14 +199,14 @@ function transformTranslationAttributes(ctx) {
             }
 
             for (const attribute of attributes) {
-                const context = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
+                const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
 
                 const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
                 const result = fullMatch.match(attributeRegex);
 
                 if (result && result.length >= 2) {
                     const srcStr = result[1] || result[2];
-                    const translationObjectString = createTranslationObjectString(ctx, srcStr, context, dataStr, filters);
+                    const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr, filters);
                     const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
                     ctx.src = ctx.src.replace(fullMatch, newTag);
                     hasMatches = true;
@@ -235,14 +235,14 @@ function transformJSTranslation(ctx) {
         const thisStr = matches[1] || ``;
         const computedStr = matches[2] || ``;
         const srcStr = matches[3];
-        const context = `JS template literal at (${ctx.relativePath}:${line})`;
+        const location = `JS template literal at (${ctx.relativePath}:${line})`;
 
         let dataStr = ``;
         if (matches.length > 4) {
             dataStr = matches[4];
         }
 
-        const translationObjectString = createTranslationObjectString(ctx, srcStr, context, dataStr);
+        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
         ctx.src = ctx.src.replace(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
         hasMatches = true;
     }
@@ -254,132 +254,98 @@ function transformJSTranslation(ctx) {
     return ctx.src;
 }
 
-function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filters = []) {
-    let src = srcStr;
-
-    if (!srcStr) {
-        throw new Error(`[Eye-In Translation] createTranslationObjectString srcStr is empty (context: ${context})`);
+function createTranslationObjectString(ctx, translationString, location, dataStr = ``, filters = []) {
+    if (!translationString) {
+        throw new Error(`[Eye-In Translation] createTranslationObjectString srcStr is empty (location: ${location})`);
     }
 
-    // Custom id
-    let translationId;
-    let customIdUsed = false;
-    let tmp = srcStr.split(`@@`);
-    if (tmp.length >= 2) {
-        translationId = tmp[1];
-        src = tmp[0];
-        customIdUsed = true
-    }
+    const {id, groupId, fullId, context, comment, inlineTranslations, source} = parseInlineTranslationString(translationString);
 
-    // Meaning
-    tmp = src.split(`##`);
-    let meaning = ``;
-    if (tmp.length >= 3) {
-        throw new Error(`[Eye-In Translation] Error parsing translation "${srcStr}" more than 1 "##" found.`)
-    } else if (tmp.length === 2) {
-        meaning = tmp[1];
-        src = tmp[0];
-    }
-
-    // inline translations
     const inlineLocales = ctx.options.inlineLocales.split(`||`);
-    const inlineTranslations = src.split(`||`);
-    const translationSource = inlineTranslations[0].trim();
-
-    // create translation id
-    if (!translationId) {
-        translationId = createTranslationId(translationSource + meaning);
-    }
-
-    // detecting group
-    let groupId = null;
-    tmp = translationId.split(`.`);
-    translationId = tmp.pop();
-    if (tmp.length > 0) {
-        groupId = tmp.pop();
-    }
-    const fullTranslationId = groupId ? `${groupId}.${translationId}` : translationId;
 
     const translationObject = {
-        id: fullTranslationId
+        id: fullId
     };
 
     for (const locale of ctx.options.locales) {
         let translationFound = false;
 
+        if (groupId && !ctx.translations[locale].hasOwnProperty(groupId)) {
+            ctx.translations[locale][groupId] = {};
+        }
+
         const localeTranslation = groupId ? ctx.translations[locale][groupId] : ctx.translations[locale];
         const localeAdditionalTranslation = groupId ? ctx.additionalTranslations[locale][groupId] : ctx.additionalTranslations[locale];
 
         const inlineLocaleIndex = inlineLocales.indexOf(locale);
-        let localeInlineTranslation = null;
+        let localeInlineTranslation = ``;
         if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex && inlineTranslations[inlineLocaleIndex]) {
-            localeInlineTranslation = inlineTranslations[inlineLocaleIndex].trim();
+            localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
         }
 
-        if ((!localeTranslation || !localeTranslation.hasOwnProperty(translationId)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(translationId))) {
+        if ((!localeTranslation || !localeTranslation.hasOwnProperty(id)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(id))) {
             // if no translation found anywhere
             const translation = {
-                source: translationSource,
+                source: source,
                 target: ``,
                 found: true,
                 delete_when_unused: true,
                 files: {}
             };
 
-            if (meaning) {
-                translation.meaning = meaning;
+            if (context) {
+                translation.context = context;
             }
 
-            if (customIdUsed) {
-                translation.source ||= translationId;
+            if (comment) {
+                translation.comment = comment;
             }
 
-            const inlineLocaleIndex = inlineLocales.indexOf(locale);
-            if (inlineLocaleIndex >= 0 && inlineTranslations.length > inlineLocaleIndex) {
-                addFileInlineTranslation(ctx, translationId, locale, translation, localeInlineTranslation, context);
+            if (localeInlineTranslation) {
+                addFileInlineTranslation(ctx, id, locale, translation, localeInlineTranslation, location);
                 translationFound = true;
             }
 
             if (groupId) {
-                localeTranslation[translationId] = translation;
+                localeTranslation[id] = translation;
             } else {
-                localeTranslation[translationId] = translation;
+                localeTranslation[id] = translation;
             }
 
             updatedLocales.add(locale);
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId) && (typeof localeTranslation[translationId] === `string` || localeTranslation[translationId].target || localeInlineTranslation)) {
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(id) && (typeof localeTranslation[id] === `string` || localeTranslation[id].target || localeInlineTranslation)) {
             // if complete translation found
             translationFound = true;
 
-            localeTranslation[translationId].found = true;
+            localeTranslation[id].found = true;
 
             // change translation file if inline has been updated
-            if (localeInlineTranslation && localeTranslation[translationId].target !== localeInlineTranslation) {
-                if (!ctx.hmr && localeTranslation[translationId].last_inline && localeTranslation[translationId].last_inline.trim() !== localeInlineTranslation.trim()) {
-                    throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${translationId}) found with different ${locale} translation. "${translationSource}" is translated by "${localeInlineTranslation}" or "${localeTranslation[translationId].last_inline}" ?`);
+            if (localeInlineTranslation && localeTranslation[id].target !== localeInlineTranslation) {
+                if (!ctx.hmr && localeTranslation[id].last_inline && localeTranslation[id].last_inline.trim() !== localeInlineTranslation.trim()) {
+                    throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${id}) found with different ${locale} translation. "${source}" is translated by "${localeInlineTranslation}" or "${localeTranslation[id].last_inline}" ?`);
                 }
-                addFileInlineTranslation(ctx, translationId, locale, localeTranslation[translationId], localeInlineTranslation, context);
+                addFileInlineTranslation(ctx, id, locale, localeTranslation[id], localeInlineTranslation, location);
                 updatedLocales.add(locale);
 
                 if (!ctx.hmr) {
-                    localeTranslation[translationId].last_inline = localeInlineTranslation;
+                    localeTranslation[id].last_inline = localeInlineTranslation;
                 }
             }
-        } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(translationId) && (typeof localeAdditionalTranslation[translationId] === `string` || localeAdditionalTranslation[translationId].target)) {
+        } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(id) && (typeof localeAdditionalTranslation[id] === `string` || localeAdditionalTranslation[id].target)) {
             // if complete additional translation found
             translationFound = true;
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(translationId)) {
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(id)) {
             // translation incomplete found
-            localeTranslation[translationId].found = true;
+            localeTranslation[id].found = true;
         }
 
         if (ctx.options.warnMissingTranslations && !translationFound) {
-            console.warn(`[Eye-In Translation] Missing translation ${locale} @@${fullTranslationId} for "${translationSource}", ${context.replace(` at (`, `\nat (`)}`);
+            console.warn(`[Eye-In Translation] Missing translation ${locale} @@${fullId} for "${source}", ${location.replace(` at (`, `\nat (`)}`);
         }
     }
 
     if (!dataStr) {
-        let allDataBindingMatches = translationSource.matchAll(/\{([\w.]+)(?:|[^}]+)*}/g);
+        let allDataBindingMatches = source.matchAll(/\{([\w.]+)(?:|[^}]+)*}/g);
         let varList = new Set();
         for (const matches of allDataBindingMatches) {
             if (matches.length > 1) {
@@ -406,7 +372,58 @@ function createTranslationObjectString(ctx, srcStr, context, dataStr = ``, filte
     return json;
 }
 
-function addFileInlineTranslation(ctx, translationId, locale, translationObject, localeTranslation, context) {
+function parseInlineTranslationString(translationString) {
+    let matches = translationString.match(/@@([\w.]+)/);
+
+    let id = null;
+
+    // Custom ID
+    if (matches && matches.length > 1) {
+        id = matches[1];
+    }
+
+    // Context
+    matches = translationString.match(/\/@\s*(.+?)\s*@\//);
+    let context = ``;
+    if (matches && matches.length > 1) {
+        context = matches[1];
+    }
+
+    // Comment
+    matches = translationString.match(/\/\*\s*(.+?)\s*\*\//);
+    let comment = ``;
+    if (matches && matches.length > 1) {
+        comment = matches[1];
+    }
+
+    translationString = translationString.split(`@@`)[0].split(`/@`)[0].split(`/*`)[0];
+
+    // inline translations
+    const inlineTranslations = translationString.split(`||`);
+    for (let i = 0; i < inlineTranslations.length; i++) {
+        inlineTranslations[i] = inlineTranslations[i].trim();
+    }
+
+    const source = inlineTranslations[0];
+
+    // create translation id
+    if (!id) {
+        id = createTranslationId(source + context);
+    }
+
+    // detecting group
+    let groupId = null;
+    const tmp = id.split(`.`);
+    id = tmp.pop();
+    if (tmp.length > 0) {
+        groupId = tmp.pop();
+    }
+    const fullId = groupId ? `${groupId}.${id}` : id;
+
+    return {id, groupId, fullId, context, comment, inlineTranslations, source};
+}
+
+function addFileInlineTranslation(ctx, translationId, locale, translationObject, localeTranslation, location) {
     translationObject.target = localeTranslation;
 
     if (!ctx.hmr) {
@@ -424,32 +441,32 @@ function addFileInlineTranslation(ctx, translationId, locale, translationObject,
 
     let hasError = false;
     let errorMessage = `[Eye-In Translation] Duplicate translations with same ID (${translationId}) but with different target translation for source "${translationObject.source}":\n`;
-    errorMessage += `  - "${localeTranslation}" ${context.replace(` at (`, `\nat (`)}\n`;
+    errorMessage += `  - "${localeTranslation}" ${location.replace(` at (`, `\nat (`)}\n`;
     for (const fileId in translationObject.files) {
         if (fileId !== ctx.fileId && translationObject.files[fileId].target !== localeTranslation) {
             hasError = true;
-            errorMessage += `  - "${translationObject.files[fileId].target}" ${translationObject.files[fileId].context.replace(` at (`, `\nat (`)}\n`;
+            errorMessage += `  - "${translationObject.files[fileId].target}" ${translationObject.files[fileId].location.replace(` at (`, `\nat (`)}\n`;
         }
     }
 
     translationObject.files[ctx.fileId] = {
         target: localeTranslation,
-        context
+        location
     };
 
     for (const translation of ctx.currentFileTranslations[locale][translationId]) {
         if (translation.target !== localeTranslation) {
             hasError = true;
-            errorMessage += `  - "${translation.target}" ${translation.context.replace(` at (`, `\nat (`)}\n`;
+            errorMessage += `  - "${translation.target}" ${translation.location.replace(` at (`, `\nat (`)}\n`;
         }
     }
 
     ctx.currentFileTranslations[locale][translationId].push({
         target: localeTranslation,
-        context
+        location
     })
 
-    errorMessage += `If these translations are meant to be different, you should use the "meaning" syntax: String to translate||Another inline locale##short description/context destined to the translator\n`;
+    errorMessage += `If these translations are meant to be different, you should use the "context" syntax: String to translate||Another inline locale /@ short description/context destined to the translator @/\n`;
 
     if (hasError) {
         console.error(errorMessage);

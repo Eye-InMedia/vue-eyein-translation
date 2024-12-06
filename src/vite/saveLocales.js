@@ -39,12 +39,14 @@ export default async function saveLocales(ctx, localesToSave = null) {
         const fingerprintArray = [];
         const localeTranslations = JSON.parse(JSON.stringify(ctx.translations[locale]));
         for (const translationId in localeTranslations) {
-            delete localeTranslations[translationId].last_update;
-            delete localeTranslations[translationId].last_inline;
-            delete localeTranslations[translationId].context;
-            delete localeTranslations[translationId].contexts;
-            delete localeTranslations[translationId].files;
-            delete localeTranslations[translationId].found;
+            if (!localeTranslations[translationId].source) {
+                const groupId = translationId;
+                for (const translationId in localeTranslations[groupId]) {
+                    purgeTranslationObject(localeTranslations[groupId][translationId]);
+                }
+            }
+
+            purgeTranslationObject(localeTranslations[translationId]);
 
             fingerprintArray.push(translationId + localeTranslations[translationId].target)
         }
@@ -148,4 +150,13 @@ async function autoTranslateLocale(ctx, locale) {
         }
         ctx.translations[locale][info.id].target = translatedText;
     }
+}
+
+function purgeTranslationObject(translationObject) {
+    delete translationObject.last_update;
+    delete translationObject.last_inline;
+    delete translationObject.contexts;
+    delete translationObject.meaning;
+    delete translationObject.files;
+    delete translationObject.found;
 }

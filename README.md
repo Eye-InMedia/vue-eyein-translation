@@ -116,7 +116,8 @@ export default {
     additionalLocalesDirs: [ // Additional directories with locales files
         `locales`
     ],
-    warnMissingTranslations: true
+    warnMissingTranslations: true,
+    debug: false
 };
 ```
 
@@ -205,9 +206,11 @@ Another shorthand using `.t` after the attribute name (But your IDE might alert 
 // Options API
 export default {
     name: `my-component`,
-    computed: { // use a computed property if you want automatic language switch when user change locale
-        jsTranslation() {
-            return this.staticTr(`Javascript translation||Traduction dans le Javascript`)
+    data() {
+        return {
+            jsTranslation: this.staticTr(`Javascript translation||Traduction dans le Javascript`),
+            // use staticTrComputed if you want it to be reactive to locale changes (beware of .value)
+            jsTranslationComputed: this.staticTrComputed(`Javascript translation||Traduction dans le Javascript`)
         }
     }
 }
@@ -216,6 +219,9 @@ export default {
 // Composition API
 const staticTr = inject(`staticTr`)
 const jsTranslation = staticTr(`Javascript translation||Traduction dans le Javascript`)
+
+// use staticTrComputed if you want it to be reactive to locale changes (beware of .value)
+const jsTranslationComputed = staticTrComputed(`Javascript translation||Traduction dans le Javascript`)
 
 ```
 
@@ -238,6 +244,7 @@ const jsTranslation = staticTr(`Javascript translation||Traduction dans le Javas
         mounted() {
             // javascript usage
             console.log(this.tr(this.jsTranslationObject));
+            console.log(this.trComputed(this.jsTranslationObject).value);
         }
     }
 </script>
@@ -249,8 +256,11 @@ console.log(tr(jsTranslationObject));
 
 // with locale watch:
 const tr = inject(`tr`);
-const locale = inject(`locale`);
-const watchedRef = computed(() => tr(jsTranslationObject));
+const jsTranslation = tr(jsTranslationObject);
+
+const trComputed = inject(`trComputed`);
+const jsTranslationComputed = trComputed(jsTranslationObject);
+// equivalent of const jsTranslationComputed = computed(() => tr(jsTranslationObject, null, locale));
 ```
 
 ### Available plugin methods
@@ -284,29 +294,37 @@ you must add all translation inline while you are coding. You can do it using `|
 This will consider the first part (before `||`) to be the english translation and the second part french translation.
 
 
-### Meaning
+### Context (will affect translation ID)
 
-You can add context to your translation by adding a meaning
+You can add context to your translation by adding: `/@ some context @/`
 (ie a short description destined to the translator to give him the context in which the text appears).
 The text will be discarded of the resulting source code and be only in the translations files.
 
 Example:
 ```html
-<button><t>Close||Fermer##Text of a button used to close a modal window</t></button>
+<button><t>Close||Fermer /@ This will be used in a button to close a modal @/</t></button>
 ```
 
-The string `Text of a button used to close a modal window` will be added to all translations files as a context for the translator.
+The string `This will be used in a button to close a modal` will be added to all .locale files as a context for the translator.
+
+### Comment (Context but without altering the id)
+It's like the context but it does not affect the id.
+
+Example:
+```html
+<button><t>Close||Fermer /* This will be used in a button to close a modal */</t></button>
+```
 
 ### Custom translation id
 
-This plugin generate an ID based on a combination of the fallback locale text and the meaning.
-For the previous example:
+This plugin generate an ID based on a combination of the fallback locale text and the context.
+For the previous examples:
 ```html
-<button><t>Close||Fermer##Text of a button used to close a modal window</t></button>
+<button><t>Close||Fermer /@ This will be used in a button to close a modal @/ /* A comment */</t></button>
 ```
-The generated ID will be a hash of `Close` + `Text of a button used to close a modal window`.
+The generated ID will be a hash of `Close` + `This will be used in a button to close a modal`.
 
-*Note that the `Fermer` text of the second inline locale is not used to generate the id.*
+*Note that the `Fermer` and `A comment` texts are not used to generate the id.*
 
 For some situations, you want to create a custom ID. For example, for common translations between projects with the `additionalLocalesDirs` feature.
 You can create custom translation ids:
@@ -328,6 +346,36 @@ fr-FR.locale
 And use it like this in the code:
 ```html
 <t>@@ok</t>
+```
+
+Custom id takes priority:
+```html
+<button><t>Close||Fermer @@customId /@ This will be used in a button to close a modal @/ /* A comment */</t></button>
+```
+The id will only be: `customId`
+
+### Grouping custom translation IDs
+With custom id you can group your translation (one level only) with the dot `.` notation:
+
+```html
+<t>Not Found@@errors.not_found</t>
+<t>@@errors.unavailable</t>
+```
+
+will generate en-US.locale:
+```json
+{
+    "errors": {
+        "not_found": {
+            "source": "Not found",
+            "target": "Not found"
+        },
+        "unavailable": {
+            "source": "",
+            "target": ""
+        }
+    }
+}
 ```
 
 ### Markdown support
