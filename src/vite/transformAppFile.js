@@ -5,13 +5,15 @@ import {getVueEndOfImportsIndex} from "./viteUtils.js";
 const rootDir = process.cwd();
 
 export default function transformAppFile(ctx) {
+    const defaultLocale = ctx.options.locales[0];
+
     let importsCode = `\n`;
     let code = `
         const _eTr = inject("_eTr");
         const _eTrTranslations = {};
         let _eTrLocaleFilesPromises = {};
         try {
-            _eTrLocaleFilesPromises = import.meta.glob("/**/locales/**/*.locale", {import: "default"});
+            _eTrLocaleFilesPromises = import.meta.glob(["/**/locales/**/*.locale", "!/**/${defaultLocale}.locale"], {import: "default"});
         } catch (e) {
             console.error(e);
         }
