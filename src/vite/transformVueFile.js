@@ -44,17 +44,13 @@ export default function transformVueFile(ctx) {
     };
 }
 
-function injectTrComposable(ctx, injectComputed = false) {
+function injectTrComposable(ctx) {
     if (!/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src)) {
         if (/import \{(.*)} from ['"]vue['"]/.test(ctx.src)) {
             ctx.src = ctx.src.replace(/import\s+\{(.*)}\s+from\s+['"]vue['"]/, `import \{$1, inject} from "vue"`);
         } else {
             ctx.src = ctx.src.replace(/(<script.*>)/, `$1\nimport {inject} from "vue"`);
         }
-    }
-
-    if (injectComputed && !/import \{.*computed.*} from ['"]vue['"]/.test(ctx.src)) {
-        ctx.src = ctx.src.replace(/import\s+\{(.*)}\s+from\s+['"]vue['"]/, `import \{$1, computed} from "vue"`);
     }
 
     const setupRegex = /<script [^>]*setup[^>]*>/g;
