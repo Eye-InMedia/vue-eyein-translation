@@ -1,5 +1,9 @@
 import {useRequestHeaders, useNuxtApp, useCookie} from '#app'
 
+/**
+ *
+ * @returns {CookieRef<string>}
+ */
 export default function useLocale() {
     const nuxtApp = useNuxtApp();
 
