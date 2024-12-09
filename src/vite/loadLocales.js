@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-export default async function loadLocales(ctx) {
+export default function loadLocales(ctx) {
     if (ctx.options.debug) {
         console.log(`[Eye-In Translation] Loading locales...`);
     }

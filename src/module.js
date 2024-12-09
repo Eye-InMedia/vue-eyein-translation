@@ -1,10 +1,10 @@
-import {defineNuxtModule, addPlugin, createResolver, addVitePlugin, addComponent, addImportsDir} from '@nuxt/kit';
+import {defineNuxtModule, addPlugin, createResolver, addComponent, addImportsDir, addVitePlugin} from '@nuxt/kit'
 import viteEyeinTranslation from "../vite-plugin-vue-eyein-translation.js";
 
 export default defineNuxtModule({
     meta: {
         name: `vue-eyein-translation`,
-        configKey: `vueEyeinTranslation`,
+        configKey: `vueEyeinTranslation`
     },
     defaults: {
         locales: [],
@@ -14,12 +14,12 @@ export default defineNuxtModule({
         appPath: `app.vue`,
         nuxt: true
     },
-    async setup(options, nuxt) {
+    setup(options, nuxt) {
         nuxt.options.runtimeConfig.public.vueEyeinTranslation = JSON.parse(JSON.stringify(options));
 
         const {resolve} = createResolver(import.meta.url)
 
-        await addComponent({
+        addComponent({
             name: `t`,
             filePath: resolve(`./runtime/components/t.vue`)
         })

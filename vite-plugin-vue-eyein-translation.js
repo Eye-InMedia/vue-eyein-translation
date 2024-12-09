@@ -6,7 +6,7 @@ import saveLocales from "./src/vite/saveLocales.js";
 import loadLocales from "./src/vite/loadLocales.js";
 import path from "path";
 
-export default async function viteEyeinTranslation(options = {}) {
+export default function viteEyeinTranslation(options = {}) {
     options = {...defaultOptions, ...options};
 
     let config;
@@ -21,13 +21,13 @@ export default async function viteEyeinTranslation(options = {}) {
             config = resolvedConfig;
             hmr = config.command === `serve`;
         },
-        async buildStart() {
-            const result = await loadLocales({options});
+        buildStart() {
+            const result = loadLocales({options});
             translations = result.translations;
             additionalTranslations = result.additionalTranslations;
         },
-        async buildEnd() {
-            await saveLocales({options, translations, additionalTranslations, hmr});
+        buildEnd() {
+            saveLocales({options, translations, additionalTranslations, hmr});
         },
         transform(src, fileId) {
             const appFileId = path.join(process.cwd(), options.appPath).replace(/\\/g, `/`);
@@ -46,7 +46,7 @@ export default async function viteEyeinTranslation(options = {}) {
 
             return result;
         },
-        async handleHotUpdate({file, server, modules, timestamp}) {
+        handleHotUpdate({file, server, modules, timestamp}) {
             if (!/\/locales\/.+\.locale/.test(file)) {
                 return null;
             }
