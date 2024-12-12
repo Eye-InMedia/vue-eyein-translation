@@ -278,14 +278,6 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
                 files: {}
             };
 
-            if (context) {
-                translation.context = context;
-            }
-
-            if (comment) {
-                translation.comment = comment;
-            }
-
             if (localeInlineTranslation) {
                 addFileInlineTranslation(ctx, id, locale, translation, localeInlineTranslation, location);
                 translationFound = true;
@@ -326,6 +318,18 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
 
         if (ctx.options.warnMissingTranslations && !translationFound) {
             console.warn(`[Eye-In Translation] Missing translation ${locale} @@${fullId} for "${source}", ${location.replace(` at (`, `\nat (`)}`);
+        }
+
+        if (localeTranslation && localeTranslation.hasOwnProperty(id)) {
+            if (context) {
+                localeTranslation[id].context = context;
+                updatedLocales.add(locale);
+            }
+
+            if (comment) {
+                localeTranslation[id].comment = comment;
+                updatedLocales.add(locale);
+            }
         }
     }
 

@@ -47,7 +47,7 @@ export default function saveLocales(ctx, localesToSave = null) {
 
             purgeTranslationObject(localeTranslations[translationId]);
 
-            fingerprintArray.push(translationId + localeTranslations[translationId].target)
+            fingerprintArray.push(translationId + localeTranslations[translationId].target + (localeTranslations[translationId].context || ``) + (localeTranslations[translationId].comment || ``))
         }
 
         // Sort alphabetically locale object
