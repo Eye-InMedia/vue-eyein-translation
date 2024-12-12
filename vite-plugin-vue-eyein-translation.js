@@ -5,6 +5,7 @@ import transformAppFile from "./src/vite/transformAppFile.js";
 import saveLocales from "./src/vite/saveLocales.js";
 import loadLocales from "./src/vite/loadLocales.js";
 import path from "path";
+import MagicString from "magic-string";
 
 export default function viteEyeinTranslation(options = {}) {
     options = {...defaultOptions, ...options};
@@ -29,25 +30,36 @@ export default function viteEyeinTranslation(options = {}) {
         buildEnd() {
             saveLocales({options, translations, additionalTranslations, hmr});
         },
-        transform(src, fileId) {
+        transform(code, fileId) {
             const appFileId = path.join(process.cwd(), options.appPath).replace(/\\/g, `/`);
 
-            let result = null;
+            /**
+             * @type {MagicString|null}
+             */
+            let src = null;
             if (appFileId === fileId) {
-                result = transformAppFile({options, fileId, src, hmr});
-                src = result.code;
-            }
-
-            if (/\.vue$/.test(fileId)) {
-                result = transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
+                src = new MagicString(code);
+                transformAppFile({options, fileId, src, hmr});
+                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
+            } else if (/\.vue$/.test(fileId)) {
+                src = new MagicString(code);
+                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
-                result = transformLocaleFile({options, fileId, src, hmr});
+                src = new MagicString(code);
+                transformLocaleFile({options, fileId, src, hmr});
             }
 
-            return result;
+            if (src) {
+                return {
+                    code: src.toString(),
+                    map: src.generateMap({hires: true})
+                };
+            }
+
+            return null;
         },
         handleHotUpdate({file, server, modules, timestamp}) {
-            if (!/\/locales\/.+\.locale/.test(file)) {
+            if (!/\.locale$/.test(file)) {
                 return null;
             }
 

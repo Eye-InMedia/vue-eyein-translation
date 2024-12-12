@@ -98,19 +98,33 @@ export default function transformAppFile(ctx) {
         `;
     }
 
-    ctx.src = ctx.src.replace(/(<script.*>)/, `$1` + importsCode);
+    if (/<script.*>/.test(ctx.src.original)) {
+        if (/<script.*\s+setup.*>/.test(ctx.src.original)) {
+            // Composition API
+            const index = getVueEndOfImportsIndex(ctx.src.original);
+            if (index >= 0) {
+                ctx.src.appendRight(index, code);
+            } else {
+                ctx.src.replace(`</script>`, code + `</script>`);
+            }
+        } else {
+            // Options API
+            const createdRegex = /created\s*:?\s*(?:function)?\s*\(\s*\)\s*(?:=>\s*)?\{/m;
+            if (createdRegex.test(ctx.src.original)) {
+                ctx.src.replace(createdRegex, `created() {` + code);
+            } else {
+                ctx.src.replace(/export\s*default\s*\{/m, `export default {\ncreated() {` + code + `},`);
+            }
+        }
 
-    const index = getVueEndOfImportsIndex(ctx.src);
 
-    if (index >= 0) {
-        ctx.src = ctx.src.slice(0, index) + `\n` + code + ctx.src.slice(index);
+        ctx.src.replace(/(<script.*>)/, (_, $1) => $1 + importsCode);
     } else {
-        ctx.src = ctx.src.replace(`</script>`, code + `</script>`);
+        // if <script> tag is totally missing in the file
+        ctx.src.append(`\n<script setup>${importsCode}${code}</script>`);
     }
 
-    // console.log(ctx.src);
-
-    return {code: ctx.src};
+    // console.log(ctx.fileId, ctx.src.toString());
 }
 
 function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {

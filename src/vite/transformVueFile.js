@@ -28,56 +28,53 @@ export default function transformVueFile(ctx) {
         }
     }
 
-    ctx.src = transformTranslationComponents(ctx);
-    ctx.src = transformTranslationSimpleAttributes(ctx);
-    ctx.src = transformTranslationAttributes(ctx);
-    ctx.src = transformJSTranslation(ctx);
+    transformTranslationComponents(ctx);
+    transformTranslationSimpleAttributes(ctx);
+    transformTranslationAttributes(ctx);
+    transformJSTranslation(ctx);
 
     if (ctx.hmr) {
         hmrLocalesUpdate(ctx);
     }
 
-    // console.log(ctx.fileId, ctx.src);
-
-    return {
-        code: ctx.src
-    };
+    // console.log(ctx.fileId, ctx.src.toString());
 }
 
 function injectTrComposable(ctx) {
-    if (!/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src)) {
-        if (/import \{(.*)} from ['"]vue['"]/.test(ctx.src)) {
-            ctx.src = ctx.src.replace(/import\s+\{(.*)}\s+from\s+['"]vue['"]/, `import \{$1, inject} from "vue"`);
-        } else {
-            ctx.src = ctx.src.replace(/(<script.*>)/, `$1\nimport {inject} from "vue"`);
-        }
+    if (ctx.trInjected) {
+        return;
+    }
+
+    ctx.trInjected = true;
+    const originalSrc = ctx.src.original;
+
+    if (!/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src.toString())) {
+        ctx.src.replace(/(<script.*>)/, `$1\nimport {inject} from "vue"`);
     }
 
     const setupRegex = /<script [^>]*setup[^>]*>/g;
-    if (!setupRegex.test(ctx.src)) {
-        return ctx.src;
+    if (!setupRegex.test(originalSrc)) {
+        return;
     }
 
     let index = setupRegex.lastIndex;
 
-    const endOfImportsIndex = getEndOfImportsIndex(ctx.src);
+    const endOfImportsIndex = getEndOfImportsIndex(originalSrc);
     if (endOfImportsIndex >= 0) {
         index = endOfImportsIndex;
     }
 
-    if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src)) {
-        ctx.src = ctx.src.substring(0, index) + `\nconst _eTr = inject('_eTr');\n` + ctx.src.substring(index);
+    if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src.toString())) {
+        ctx.src.appendRight(index, `\nconst _eTr = inject('_eTr');\n`);
     }
-
-    return ctx.src;
 }
 
 function transformTranslationComponents(ctx) {
-    const originalSrc = ctx.src;
+    const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>([^<>]+?)<\/t>/gd);
+    let allMatches = originalSrc.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>([^<>]+?)<\/t>/gd);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const propsStr = matches[1] ? matches[1] : ``;
@@ -86,20 +83,18 @@ function transformTranslationComponents(ctx) {
         const line = findLineNumber(matches.indices[3], originalSrc);
         const location = `<t> tag at (${ctx.relativePath}:${line})`;
         const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        ctx.src = ctx.src.replace(fullMatch, `<t ${propsStr} :value="${translationObjectString}"></t>`);
+        ctx.src.replaceAll(fullMatch, `<t${propsStr} :value="${translationObjectString}"></t>`);
         hasMatches = true;
     }
 
     if (hasMatches) {
-        ctx.src = injectTrComposable(ctx);
+        injectTrComposable(ctx);
     }
-
-    return ctx.src;
 }
 
 
 function transformTranslationSimpleAttributes(ctx) {
-    const originalSrc = ctx.src;
+    const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
@@ -108,7 +103,7 @@ function transformTranslationSimpleAttributes(ctx) {
     while (matchesLength > 0 && i < 10) {
         i++;
         matchesLength = 0;
-        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t="(.+?)")[^<>]*?>/sdg);
+        let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t="(.+?)")[^<>]*?>/sdg);
 
         for (const matches of allMatches) {
             matchesLength++;
@@ -120,24 +115,22 @@ function transformTranslationSimpleAttributes(ctx) {
             const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
 
             const translationObjectString = createTranslationObjectString(ctx, srcStr, location);
-            ctx.src = ctx.src.replace(fullAttribute, `:${attribute}="_eTr.tr(${translationObjectString})"`);
+            ctx.src.replaceAll(fullAttribute, `:${attribute}="_eTr.tr(${translationObjectString})"`);
             hasMatches = true;
         }
     }
 
     if (hasMatches) {
-        ctx.src = injectTrComposable(ctx);
+        injectTrComposable(ctx);
     }
-
-    return ctx.src;
 }
 
 function transformTranslationAttributes(ctx) {
-    const originalSrc = ctx.src;
+    const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:="(.+?)")?)[^<>]*?>/sdg);
+    let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:="(.+?)")?)[^<>]*?>/sdg);
     for (const matches of allMatches) {
         let fullMatch = matches[0];
         const tagName = matches[1];
@@ -163,7 +156,7 @@ function transformTranslationAttributes(ctx) {
                 const srcStr = result[1] || result[2];
                 const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
                 const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-                ctx.src = ctx.src.replace(fullMatch, newTag);
+                ctx.src.replaceAll(fullMatch, newTag);
                 hasMatches = true;
                 fullMatch = newTag;
             }
@@ -175,7 +168,7 @@ function transformTranslationAttributes(ctx) {
     while (matchesLength > 0 && i < 10) {
         i++;
         matchesLength = 0;
-        let allMatches = ctx.src.matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:="(.+?)")?)[^<>]*?>/sdg);
+        let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:="(.+?)")?)[^<>]*?>/sdg);
 
         for (const matches of allMatches) {
             matchesLength++;
@@ -204,7 +197,7 @@ function transformTranslationAttributes(ctx) {
                     const srcStr = result[1] || result[2];
                     const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr, filters);
                     const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-                    ctx.src = ctx.src.replace(fullMatch, newTag);
+                    ctx.src.replaceAll(fullMatch, newTag);
                     hasMatches = true;
                     fullMatch = newTag;
                 }
@@ -213,18 +206,16 @@ function transformTranslationAttributes(ctx) {
     }
 
     if (hasMatches) {
-        ctx.src = injectTrComposable(ctx);
+        injectTrComposable(ctx);
     }
-
-    return ctx.src;
 }
 
 function transformJSTranslation(ctx) {
-    const originalSrc = ctx.src;
+    const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+    let allMatches = ctx.src.toString().matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const line = findLineNumber(matches.indices[3], originalSrc);
@@ -239,15 +230,13 @@ function transformJSTranslation(ctx) {
         }
 
         const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        ctx.src = ctx.src.replace(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
+        ctx.src.replaceAll(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
         hasMatches = true;
     }
 
     if (hasMatches) {
-        ctx.src = injectTrComposable(ctx);
+        injectTrComposable(ctx);
     }
-
-    return ctx.src;
 }
 
 function createTranslationObjectString(ctx, translationString, location, dataStr = ``, filters = []) {

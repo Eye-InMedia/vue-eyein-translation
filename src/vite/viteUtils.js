@@ -69,7 +69,7 @@ export function getVueEndOfImportsIndex(src) {
 
     let index = scriptRegex.lastIndex;
     const endOfImportsIndex = getEndOfImportsIndex(src);
-    if (endOfImportsIndex) {
+    if (endOfImportsIndex >= 0) {
         index = endOfImportsIndex;
     }
 

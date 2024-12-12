@@ -1,7 +1,7 @@
 export default function transformLocaleFile(ctx) {
     // console.log(`transformLocaleFile`, ctx.fileId);
 
-    const json = JSON.parse(ctx.src);
+    const json = JSON.parse(ctx.src.toString());
     let result = {};
     for (const key in json) {
         if (key === `$fingerprint`) {
@@ -22,6 +22,10 @@ export default function transformLocaleFile(ctx) {
         }
     }
 
-    const code = `const locale = ${JSON.stringify(result)}; export default locale;`;
-    return {code: code};
+    ctx.src.remove(0, ctx.src.toString().length);
+    ctx.src.append(JSON.stringify(result));
+    ctx.src.prepend(`const locale = `);
+    ctx.src.append(`; export default locale;`);
+
+    // console.log(ctx.fileId, ctx.src.toString());
 }
