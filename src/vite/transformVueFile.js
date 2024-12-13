@@ -29,8 +29,9 @@ export default function transformVueFile(ctx) {
     }
 
     transformTranslationComponents(ctx);
-    transformTranslationSimpleAttributes(ctx);
-    transformTranslationAttributes(ctx);
+    transformTranslationDotTAttributes(ctx);
+    transformTranslationVTDotAttributes(ctx);
+    transformTranslationVTColonAttributes(ctx);
     transformJSTranslation(ctx);
 
     if (ctx.hmr) {
@@ -92,32 +93,37 @@ function transformTranslationComponents(ctx) {
     }
 }
 
-
-function transformTranslationSimpleAttributes(ctx) {
+// replace notation attribute.t="Text to translate"
+function transformTranslationDotTAttributes(ctx) {
     const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
-    let matchesLength = 1;
-    let i = 0;
-    while (matchesLength > 0 && i < 10) {
-        i++;
-        matchesLength = 0;
-        let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+(([\w-]+)\.t="(.+?)")[^<>]*?>/sdg);
+    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+[\w-]+\.t=".+?"[^<>]*?>/sdg);
+    for (const tagMatches of allTagsMatches) {
+        hasMatches = true;
 
-        for (const matches of allMatches) {
-            matchesLength++;
-            const tagName = matches[1];
-            const fullAttribute = matches[2];
-            const attribute = matches[3];
-            const srcStr = matches[4];
-            const line = findLineNumber(matches.indices[3], originalSrc);
+        /**
+         * @type {string}
+         */
+        const fullMatch = tagMatches[0];
+        let newTag = fullMatch;
+        const tagName = tagMatches[1];
+        let tagLine = findLineNumber(tagMatches.indices[0], originalSrc);
+
+        let allAttributesMatches = fullMatch.matchAll(/\s+([\w-]+)\.t="(.+?)"/sdg);
+        for (const attributeMatches of allAttributesMatches) {
+            const fullAttributeMatch = attributeMatches[0];
+            const attribute = attributeMatches[1];
+            const srcStr = attributeMatches[2];
+            const line = tagLine + findLineNumber(attributeMatches.indices[1], fullMatch);
             const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
 
             const translationObjectString = createTranslationObjectString(ctx, srcStr, location);
-            ctx.src.replaceAll(fullAttribute, `:${attribute}="_eTr.tr(${translationObjectString})"`);
-            hasMatches = true;
+            newTag = newTag.replace(fullAttributeMatch, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
         }
+
+        ctx.src.replaceAll(fullMatch, newTag);
     }
 
     if (hasMatches) {
@@ -125,84 +131,107 @@ function transformTranslationSimpleAttributes(ctx) {
     }
 }
 
-function transformTranslationAttributes(ctx) {
+// replace notation attribute1="Text to translate" attribute2="Another text to translate" v-t.attribute1.attribute2="data"
+function transformTranslationVTDotAttributes(ctx) {
     const originalSrc = ctx.src.original;
 
     let hasMatches = false;
 
-    let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+((v-t(?:\.[\w-]+)+)(?:="(.+?)")?)[^<>]*?>/sdg);
-    for (const matches of allMatches) {
-        let fullMatch = matches[0];
+    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+v-t(?:\.[\w-]+)+(?:=".+?")?[^<>]*?>/sdg);
+    for (const matches of allTagsMatches) {
+        hasMatches = true;
+
+        /**
+         * @type {string}
+         */
+        const fullMatch = matches[0];
+        let newTag = fullMatch;
         const tagName = matches[1];
-        const fullDirective = matches[2];
-        const directive = matches[3];
-        const line = findLineNumber(matches.indices[3], originalSrc);
+        const tagLine = findLineNumber(matches.indices[1], originalSrc);
 
-        const attributes = directive.split(`.`);
-        attributes.shift();
+        let allDirectivesMatches = fullMatch.matchAll(/\s+(v-t(?:\.[\w-]+)+)(?:="(.+?)")?/sdg);
+        for (const directiveMatches of allDirectivesMatches) {
+            const fullDirectiveMatch = directiveMatches[0];
+            const directive = directiveMatches[1];
 
-        let dataStr = ``;
-        if (matches.length > 4) {
-            dataStr = matches[4];
-        }
-
-        for (const attribute of attributes) {
-            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
-
-            const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
-            const result = fullMatch.match(attributeRegex);
-
-            if (result && result.length >= 2) {
-                const srcStr = result[1] || result[2];
-                const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-                const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-                ctx.src.replaceAll(fullMatch, newTag);
-                hasMatches = true;
-                fullMatch = newTag;
-            }
-        }
-    }
-
-    let matchesLength = 1;
-    let i = 0;
-    while (matchesLength > 0 && i < 10) {
-        i++;
-        matchesLength = 0;
-        let allMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+((v-t:[\w-]+(?:\.[\w-]+)*)(?:="(.+?)")?)[^<>]*?>/sdg);
-
-        for (const matches of allMatches) {
-            matchesLength++;
-            let fullMatch = matches[0];
-            const tagName = matches[1];
-            const fullDirective = matches[2];
-            const directive = matches[3];
-            const line = findLineNumber(matches.indices[3], originalSrc);
-
-            const tmp = directive.split(`:`);
-            const filters = tmp[1].split(`.`);
-            const attributes = [filters.shift()];
+            const attributes = directive.split(`.`);
+            attributes.shift();
 
             let dataStr = ``;
-            if (matches.length > 4) {
-                dataStr = matches[4];
+            if (directiveMatches.length > 1) {
+                dataStr = directiveMatches[2];
             }
 
             for (const attribute of attributes) {
-                const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
+                const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${tagLine})`;
 
                 const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
-                const result = fullMatch.match(attributeRegex);
+                const result = newTag.match(attributeRegex);
 
                 if (result && result.length >= 2) {
                     const srcStr = result[1] || result[2];
-                    const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr, filters);
-                    const newTag = fullMatch.replace(fullDirective, ``).replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-                    ctx.src.replaceAll(fullMatch, newTag);
-                    hasMatches = true;
-                    fullMatch = newTag;
+                    const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
+                    newTag = newTag.replace(fullDirectiveMatch, ``)
+                        .replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
                 }
             }
         }
+
+        ctx.src.replaceAll(fullMatch, newTag);
+    }
+
+    if (hasMatches) {
+        injectTrComposable(ctx);
+    }
+}
+
+// replace notation attribute="Text to translate" v-t:attribute.filter1.filter2="data"
+function transformTranslationVTColonAttributes(ctx) {
+    const originalSrc = ctx.src.original;
+
+    let hasMatches = false;
+
+    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+v-t:[\w-]+(?:\.[\w-]+)*(?:=".+?")?[^<>]*?>/sdg);
+    for (const matches of allTagsMatches) {
+        hasMatches = true;
+
+        /**
+         * @type {string}
+         */
+        const fullMatch = matches[0];
+        let newTag = fullMatch;
+        const tagName = matches[1];
+        const tagLine = findLineNumber(matches.indices[1], originalSrc);
+
+        let allDirectivesMatches = fullMatch.matchAll(/\s+v-t:([\w-]+)((?:\.[\w-]+)*)(?:="(.+?)")?/sdg);
+        for (const directiveMatches of allDirectivesMatches) {
+            const fullDirectiveMatch = directiveMatches[0];
+            const attribute = directiveMatches[1];
+
+            let filters = []
+            if (directiveMatches.length > 1) {
+                filters = directiveMatches[2].split(`.`);
+                filters.shift();
+            }
+
+            let dataStr = ``;
+            if (directiveMatches.length > 2) {
+                dataStr = directiveMatches[3];
+            }
+
+            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${tagLine})`;
+            const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
+            const result = newTag.match(attributeRegex);
+
+            if (result && result.length >= 2) {
+                const srcStr = result[1] || result[2];
+                const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr, filters);
+                newTag = newTag.replace(fullDirectiveMatch, ``)
+                    .replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
+            }
+        }
+
+        ctx.src.replaceAll(fullMatch, newTag);
     }
 
     if (hasMatches) {
