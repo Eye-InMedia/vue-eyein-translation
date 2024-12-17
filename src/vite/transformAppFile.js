@@ -36,7 +36,7 @@ export default function transformAppFile(ctx) {
         importsPaths[locale] = importPath;
 
         // Always import default locale (first locale of the array)
-        if (ctx.options.nuxt || ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
+        if (ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
             importsCode += `import ${importName} from "${importPath}";\n`;
             code += `_eTrTranslations["${locale}"] = ${importName};\n`;
         } else {
@@ -49,7 +49,7 @@ export default function transformAppFile(ctx) {
             if (fs.existsSync(additionalLocaleAbsolutePath)) {
                 const {importName, importPath} = getImportPath(ctx.fileId, additionalLocaleAbsolutePath, localeLowercase);
 
-                if (ctx.options.nuxt || ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
+                if (ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
                     importsCode += `import ${importName} from "${importPath}";\n`;
                     code += `_eTrTranslations["${locale}"] = {...${importName}, ..._eTrTranslations["${locale}"]}\n`;
                 }
@@ -73,7 +73,7 @@ export default function transformAppFile(ctx) {
     });\n`;
 
     if (ctx.options.nuxt) {
-        code += `useLocale();\nsetLocaleWatcher();\n`
+        code += `useLocale();\nawait setLocaleWatcher();\n`
     }
 
     if (ctx.hmr) {

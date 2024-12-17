@@ -1,15 +1,15 @@
 import {useNuxtApp, useCookie} from '#app'
 import {watch} from 'vue'
 
-export default function setLocaleWatcher() {
+export default async function setLocaleWatcher() {
     const nuxtApp = useNuxtApp();
 
-    const locale = useLocale();
-    if (locale.value) {
-        nuxtApp.vueApp.config.globalProperties._eTr.setLocaleSync(locale.value);
+    const localeState = useCookie(`locale`, {secure: true, sameSite: true});
+    if (localeState.value) {
+        await nuxtApp.vueApp.config.globalProperties._eTr.setLocale(localeState.value);
     }
 
-    watch(locale, async (newLocale, oldLocale) => {
-        nuxtApp.vueApp.config.globalProperties._eTr.setLocaleSync(newLocale);
+    watch(localeState, async (newLocale, oldLocale) => {
+        nuxtApp.vueApp.config.globalProperties._eTr.setLocale(newLocale);
     });
 }
