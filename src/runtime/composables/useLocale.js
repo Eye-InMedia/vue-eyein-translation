@@ -19,11 +19,11 @@ export default function useLocale() {
         if (process.server) {
             const headers = useRequestHeaders([`accept-language`])
             if (headers[`accept-language`]) {
-                locale = headers[`accept-language`].substring(0, 5)
+                locale = nuxtApp.vueApp.config.globalProperties._eTr.getNavigatorLocale(headers[`accept-language`].split(`,`))
                 localeUpdated = true;
             }
         } else {
-            locale = navigator.language.substring(0, 5)
+            locale = nuxtApp.vueApp.config.globalProperties._eTr.getNavigatorLocale()
             localeUpdated = true;
         }
 

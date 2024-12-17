@@ -54,6 +54,7 @@ export default {
     getLocales() {
         return Object.keys(translations);
     },
+    getNavigatorLocale: getNavigatorLocale,
     tr: tr,
     trComputed(value, data = null) {
         return computed(() => tr(value, data, _eLocale.value));
@@ -234,21 +235,19 @@ export function mountedUpdated(el, binding) {
     el.setAttribute(attribute, value);
 }
 
-export function getNavigatorLocale() {
+export function getNavigatorLocale(acceptedLocales = null) {
     try {
         const locales = Object.keys(translations);
 
-        if (!navigator) {
-            return locales[0];
-        }
-
-        const navigatorLanguage = navigator.language;
-        if (!navigatorLanguage) {
-            return locales[0];
-        }
-
         let locale;
-        const acceptedLocales = navigatorLanguage.split(`,`);
+        if (!acceptedLocales) {
+            if (navigator.languages && navigator.languages.length > 0) {
+                acceptedLocales = navigator.languages;
+            } else if (navigator.languages) {
+                acceptedLocales = navigator.language.split(`,`);
+            }
+        }
+
         for (const acceptedLocale of acceptedLocales) {
             const l = acceptedLocale.split(`;`).shift();
             if (locales.includes(l)) {
@@ -256,12 +255,12 @@ export function getNavigatorLocale() {
                 break;
             }
 
-            if (l.length === 2) {
-                const similarLocale = locales.find(loc => loc.startsWith(l));
-                if (similarLocale) {
-                    locale = similarLocale;
-                    break;
-                }
+            const shortLocale = l.substring(0, 2);
+
+            const similarLocale = locales.find(loc => loc.startsWith(shortLocale));
+            if (similarLocale) {
+                locale = similarLocale;
+                break;
             }
         }
 
