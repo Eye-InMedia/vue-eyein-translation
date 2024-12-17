@@ -36,7 +36,7 @@ export default function transformAppFile(ctx) {
         importsPaths[locale] = importPath;
 
         // Always import default locale (first locale of the array)
-        if (ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
+        if (ctx.options.nuxt || ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
             importsCode += `import ${importName} from "${importPath}";\n`;
             code += `_eTrTranslations["${locale}"] = ${importName};\n`;
         } else {
@@ -49,7 +49,7 @@ export default function transformAppFile(ctx) {
             if (fs.existsSync(additionalLocaleAbsolutePath)) {
                 const {importName, importPath} = getImportPath(ctx.fileId, additionalLocaleAbsolutePath, localeLowercase);
 
-                if (ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
+                if (ctx.options.nuxt || ctx.hmr || ctx.options.locales.indexOf(locale) === 0) {
                     importsCode += `import ${importName} from "${importPath}";\n`;
                     code += `_eTrTranslations["${locale}"] = {...${importName}, ..._eTrTranslations["${locale}"]}\n`;
                 }
@@ -73,7 +73,7 @@ export default function transformAppFile(ctx) {
     });\n`;
 
     if (ctx.options.nuxt) {
-        code += `useLocale();\n`
+        code += `useLocale();\nsetLocaleWatcher();\n`
     }
 
     if (ctx.hmr) {
@@ -122,10 +122,6 @@ export default function transformAppFile(ctx) {
     } else {
         // if <script> tag is totally missing in the file
         ctx.src.append(`\n<script setup>${importsCode}${code}</script>`);
-    }
-
-    if (ctx.options.nuxt) {
-        ctx.src.replace(/(<\/script>)/, `\nawait setLocaleWatcher();\n</script>`);
     }
 
     // console.log(ctx.fileId, ctx.src.toString());

@@ -47,6 +47,7 @@ export default {
     locale: _eLocale,
     locales: computed(() => Object.keys(translations)),
     setLocale: setLocale,
+    setLocaleSync: setLocaleSync,
     loadLocale: loadLocale,
     getLocale() {
         return _eLocale.value;
@@ -72,6 +73,24 @@ export async function setLocale(locale, reactiveAlreadyChanged = false) {
 
     if (Object.keys(translations[locale]).length === 0) {
         await loadLocale(locale);
+    }
+
+    if (globalThis.localStorage) {
+        localStorage.setItem(`locale`, locale);
+    }
+
+    _eLocale.value = locale;
+}
+
+export function setLocaleSync(locale, reactiveAlreadyChanged = false) {
+    const locales = Object.keys(translations);
+    if (!locales.includes(locale)) {
+        console.warn(`Cannot change locale to ${locale} (available locales: ${locales.join(`, `)})`);
+        return;
+    }
+
+    if (Object.keys(translations[locale]).length === 0) {
+        throw new Error(`Cannot use setLocaleSync with not already loaded locale.`);
     }
 
     if (globalThis.localStorage) {
