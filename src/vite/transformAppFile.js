@@ -73,7 +73,7 @@ export default function transformAppFile(ctx) {
     });\n`;
 
     if (ctx.options.nuxt) {
-        code += `useLocale();\nawait setLocaleWatcher();\n`
+        code += `useLocale();\n`
     }
 
     if (ctx.hmr) {
@@ -122,6 +122,10 @@ export default function transformAppFile(ctx) {
     } else {
         // if <script> tag is totally missing in the file
         ctx.src.append(`\n<script setup>${importsCode}${code}</script>`);
+    }
+
+    if (ctx.options.nuxt) {
+        ctx.src.replace(/(<\/script>)/, `\nawait setLocaleWatcher();\n</script>`);
     }
 
     // console.log(ctx.fileId, ctx.src.toString());
