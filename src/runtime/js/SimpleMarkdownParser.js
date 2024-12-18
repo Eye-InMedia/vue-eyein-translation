@@ -38,24 +38,41 @@ export default class SimpleMarkdownParser {
 
         result = result.replace(/\/!\/\/!\//g, ``);
 
+        let opts = {
+            id: {},
+            class: {}
+        };
+        for (const attr in this.attributes) {
+            const tmp = attr.split(`.`);
+            const attributeName = tmp.shift();
+
+            if (![`class`, `id`].includes(attributeName)) {
+                continue;
+            }
+
+            for (const number of tmp) {
+                opts[attributeName][number] = this.attributes[attr];
+            }
+        }
+
         const allMatches = result.matchAll(/\/!\/\((\d+)\)\/!\//g);
         for (const matches of allMatches) {
             const number = matches[1];
             let replacement = ``;
 
-            if (this.attributes.hasOwnProperty(`id:${number}`)) {
-                replacement += ` id="${this.attributes[`id:${number}`]}"`;
+            if (opts.id.hasOwnProperty(number)) {
+                replacement += ` id="${opts.id[number]}"`;
             }
 
-            if (this.attributes.hasOwnProperty(`class:${number}`)) {
-                replacement += ` class="${this.attributes[`class:${number}`]}"`;
+            if (opts.class.hasOwnProperty(number)) {
+                replacement += ` class="${opts.class[number]}"`;
             }
 
             result = result.replaceAll(matches[0], replacement);
         }
 
-        if (this.attributes.hasOwnProperty(`class:_`)) {
-            result = result.replaceAll(`<span>`, `<span class="${this.attributes[`class:_`]}">`);
+        if (opts.class.hasOwnProperty(`_`)) {
+            result = result.replaceAll(`<span>`, `<span class="${opts.class._}">`);
         }
 
         this.str = result;
