@@ -73,7 +73,7 @@ export default function transformAppFile(ctx) {
     });\n`;
 
     if (ctx.options.nuxt) {
-        code += `useLocale();\nawait setLocaleWatcher();\n`
+        code += `useLocale();\n`
     }
 
     if (ctx.hmr) {
@@ -121,10 +121,18 @@ export default function transformAppFile(ctx) {
         ctx.src.replace(/(<script.*>)/, (_, $1) => $1 + importsCode);
     } else {
         // if <script> tag is totally missing in the file
-        ctx.src.append(`\n<script setup>${importsCode}${code}</script>`);
+        ctx.src.append(`\n<script setup>${importsCode}${code}`);
+        if (ctx.options.nuxt) {
+            ctx.src.append(`\nawait setLocaleWatcher();`);
+        }
+        ctx.src.append(`\n</script>`);
     }
 
-    // console.log(ctx.fileId, ctx.src.toString());
+    if (ctx.options.nuxt) {
+        ctx.src.replace(`</script>`, `await setLocaleWatcher();\n</script>`);
+    }
+
+    console.log(ctx.fileId, ctx.src.toString());
 }
 
 function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {
