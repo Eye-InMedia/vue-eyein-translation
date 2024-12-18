@@ -378,6 +378,30 @@ will generate en-US.locale:
 }
 ```
 
+### Grouping translations with auto ID
+You can use the preceding notation with the joker `*` to group without the need to add a full custom id
+
+```html
+<t>Not Found@@errors.*</t>
+<t>@@errors.*</t>
+```
+
+will generate en-US.locale:
+```json
+{
+    "errors": {
+        "zz1q8easg04mskn2": {
+            "source": "Not found",
+            "target": "Not found"
+        },
+        "zz1vvovo70n94tmv": {
+            "source": "",
+            "target": ""
+        }
+    }
+}
+```
+
 ### Markdown support
 
 Markdown is supported inside translation to apply some styling or features (only in `<t>` component):

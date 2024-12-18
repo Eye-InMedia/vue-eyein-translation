@@ -391,7 +391,7 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
 }
 
 function parseInlineTranslationString(translationString) {
-    let matches = translationString.match(/@@([\w.]+)/);
+    let matches = translationString.match(/@@([\w.*]+)/);
 
     let id = null;
 
@@ -435,6 +435,9 @@ function parseInlineTranslationString(translationString) {
     id = tmp.pop();
     if (tmp.length > 0) {
         groupId = tmp.pop();
+    }
+    if (groupId && id === `*`) {
+        id = createTranslationId(source + context);
     }
     const fullId = groupId ? `${groupId}.${id}` : id;
 
