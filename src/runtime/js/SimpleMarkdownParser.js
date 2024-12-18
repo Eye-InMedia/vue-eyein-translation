@@ -51,7 +51,11 @@ export default class SimpleMarkdownParser {
             }
 
             for (const number of tmp) {
-                opts[attributeName][number] = this.attributes[attr];
+                if (!opts[attributeName].hasOwnProperty(number)) {
+                    opts[attributeName][number] = this.attributes[attr];
+                } else {
+                    opts[attributeName][number] += ` ` + this.attributes[attr];
+                }
             }
         }
 

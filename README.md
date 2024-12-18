@@ -446,13 +446,13 @@ This <span class="highlighted bordered">word</span> must <strong>have</strong> c
 <strong id="myId">some text with id</strong>
 
 <!-- More complex example -->
-<t id.1="myId" class.1.2="highlighted">
+<t id.1="myId" class.1.2="highlighted" class.2="bordered">
     This *word*(1) must have class .highlighted and id #myId.
     Another **words**(2) with __only__(2) class .highlighted but different tags
 </t>
 <!-- will generate: -->
 This <em id="myId" class="highlighted">word</em> must have class .highlighted and id #myId.
-Another <strong class="highlighted">word</strong> with <span class="highlighted">only</span> class .highlighted but different tags
+Another <strong class="highlighted bordered">word</strong> with <span class="highlighted bordered">only</span> class .highlighted and .bordered but different tags
 ```
 
 ### Filters
