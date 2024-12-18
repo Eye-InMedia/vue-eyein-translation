@@ -132,7 +132,7 @@ export default function transformAppFile(ctx) {
         ctx.src.replace(`</script>`, `await setLocaleWatcher();\n</script>`);
     }
 
-    console.log(ctx.fileId, ctx.src.toString());
+    // console.log(ctx.fileId, ctx.src.toString());
 }
 
 function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {
