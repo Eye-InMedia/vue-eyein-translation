@@ -6,11 +6,12 @@ export default class SimpleMarkdownParser {
 
     #sanitizeHTML(options) {
         this.str = this.str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+            .replace(/&/g, `&amp;`)
+            .replace(/</g, `&lt;`)
+            .replace(/>/g, `&gt;`)
+            .replace(/"/g, `&quot;`)
+            .replace(/'/g, `&#039;`)
+            .replace(/&lt;br&gt;/g, `<br>`);
     }
 
     #renderEscapedCharacter(options) {

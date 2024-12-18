@@ -75,7 +75,7 @@ function transformTranslationComponents(ctx) {
 
     let hasMatches = false;
 
-    let allMatches = originalSrc.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>([^<>]+?)<\/t>/gd);
+    let allMatches = originalSrc.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>((?:[^<>]|<br>)+?)<\/t>/gd);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const propsStr = matches[1] ? matches[1] : ``;
