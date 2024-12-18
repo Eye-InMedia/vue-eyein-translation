@@ -64,7 +64,7 @@ export default {
             return result;
         },
         htmlResult() {
-            const markdownParser = new SimpleMarkdownParser(this.translation);
+            const markdownParser = new SimpleMarkdownParser(this.translation, this.$attrs);
             return markdownParser.parse({linkTarget: this.linkTarget})
         }
     }

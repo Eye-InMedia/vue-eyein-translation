@@ -408,13 +408,51 @@ Markdown is supported inside translation to apply some styling or features (only
 ```html
 <t>**bold** *italic* _underline_ ***italic and bold*** ~~strikethrough~~ --strikethrough alternative-- ==highlighted==, H~2~O, x^2^</t>
 <t>Click on [this link](https://example.com)</t>
-<t>.[some text with classes](class1 class2)</t> // will generate: <span class="class1 class2">some text with classes</span>
-<t>#[some text with id](myId)</t> // will generate: <span id="myId">some text with id</span>
 ```
 
 As a result some characters must be escaped in translations:
 ```html
 <t>These characters should be escaped: \~ \= \* \_ \^</t>
+```
+
+We added Markdown-like features to add custom classes or id:
+```html
+<!-- Custom classes -->
+<t class:1="highlighted bordered">
+    This __word__(1) must have classes .highlighted and .bordered
+</t>
+<!-- will generate: -->
+This <span class="highlighted bordered">word</span> must have classes .highlighted and .bordered
+
+<!-- Custom classes shorthand with no parenthesis (works only with __text__ syntax) -->
+<t class:_="highlighted bordered">
+    This __word__ must **have** classes .highlighted and .bordered
+</t>
+<!-- will generate: -->
+This <span class="highlighted bordered">word</span> must <strong>have</strong> classes .highlighted and .bordered
+
+<!-- Custom id -->
+<t id:1="myId">
+    __some text with id__(1)
+</t>
+<!-- will generate: -->
+<span id="myId">some text with id</span>
+
+<!-- Custom id or class + another markdown -->
+<t id:1="myId">
+    **some text with id**(1)
+</t>
+<!-- will generate: -->
+<strong id="myId">some text with id</strong>
+
+<!-- More complex example -->
+<t id:1="myId" class:1="highlighted" class:2="highlighted">
+    This *word*(1) must have class .highlighted and id #myId.
+    Another **words**(2) with __only__(2) class .highlighted but different tags
+</t>
+<!-- will generate: -->
+This <em id="myId" class="highlighted">word</em> must have class .highlighted and id #myId.
+Another <strong class="highlighted">word</strong> with <span class="highlighted">only</span> class .highlighted but different tags
 ```
 
 ### Filters
