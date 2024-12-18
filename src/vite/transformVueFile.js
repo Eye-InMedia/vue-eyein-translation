@@ -427,7 +427,7 @@ function parseInlineTranslationString(translationString) {
     // inline translations
     const inlineTranslations = translationString.split(`||`);
     for (let i = 0; i < inlineTranslations.length; i++) {
-        inlineTranslations[i] = inlineTranslations[i].trim();
+        inlineTranslations[i] = inlineTranslations[i].trim().replace(/\s{2,}/g, ` `);
     }
 
     const source = inlineTranslations[0];
