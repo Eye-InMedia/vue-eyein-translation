@@ -15,7 +15,17 @@ export default function saveLocales(ctx, localesToSave = null) {
         if (!ctx.hmr) {
             if (ctx.options.purgeOldTranslations) {
                 for (const translationId in ctx.translations[locale]) {
-                    if (!ctx.translations[locale][translationId].found && ctx.translations[locale][translationId].delete_when_unused) {
+                    if (!ctx.translations[locale][translationId].source) {
+                        // if it's a group of translations
+                        const groupId = translationId;
+                        for (const translationId in ctx.translations[locale][groupId]) {
+                            if (!ctx.translations[locale][groupId][translationId].found && ctx.translations[locale][groupId][translationId].delete_when_unused) {
+                                console.warn(`[Eye-In Translation] Deleting removed ${locale} translation (id: ${translationId}): ${ctx.translations[locale][groupId][translationId].source}`);
+                                delete ctx.translations[locale][groupId][translationId];
+                            }
+                        }
+                    } else if (!ctx.translations[locale][translationId].found && ctx.translations[locale][translationId].delete_when_unused) {
+                        // if it's a translation without group
                         console.warn(`[Eye-In Translation] Deleting removed ${locale} translation (id: ${translationId}): ${ctx.translations[locale][translationId].source}`);
                         delete ctx.translations[locale][translationId];
                     }
@@ -47,7 +57,7 @@ export default function saveLocales(ctx, localesToSave = null) {
 
             purgeTranslationObject(localeTranslations[translationId]);
 
-            fingerprintArray.push(translationId + localeTranslations[translationId].target + (localeTranslations[translationId].context || ``) + (localeTranslations[translationId].comment || ``))
+            fingerprintArray.push(translationId + JSON.stringify(localeTranslations[translationId]))
         }
 
         // Sort alphabetically locale object
@@ -152,6 +162,9 @@ async function autoTranslateLocale(ctx, locale) {
 }
 
 function purgeTranslationObject(translationObject) {
+    if (translationObject.files) {
+        translationObject.used = Object.keys(translationObject.files).length;
+    }
     delete translationObject.last_update;
     delete translationObject.last_inline;
     delete translationObject.contexts;

@@ -350,6 +350,14 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
         }
 
         if (localeTranslation && localeTranslation.hasOwnProperty(id)) {
+            if (!localeTranslation[id].hasOwnProperty(`files`)) {
+                localeTranslation[id].files = {};
+            }
+
+            localeTranslation[id].files[ctx.fileId] = {
+                location
+            };
+
             if (context) {
                 localeTranslation[id].context = context;
                 updatedLocales.add(locale);
@@ -458,7 +466,6 @@ function addFileInlineTranslation(ctx, translationId, locale, translationObject,
     if (!ctx.currentFileTranslations[locale].hasOwnProperty(translationId)) {
         ctx.currentFileTranslations[locale][translationId] = [];
     }
-
 
     let hasError = false;
     let errorMessage = `[Eye-In Translation] Duplicate translations with same ID (${translationId}) but with different target translation for source "${translationObject.source}":\n`;
