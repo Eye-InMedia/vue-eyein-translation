@@ -7,9 +7,15 @@ const rootDir = process.cwd();
 export default function transformAppFile(ctx) {
     const defaultLocale = ctx.options.locales[0];
 
+    let isCompositionApi = false;
+    if (/<script.*\s+setup.*>/.test(ctx.src.original)) {
+        isCompositionApi = true;
+    }
+
     let importsCode = `\n`;
-    let code = `
-        const _eTr = inject("_eTr");
+
+    let code = isCompositionApi ? `\nconst _eTr = inject("_eTr");` : ``;
+    code += `
         const _eTrTranslations = {};
         let _eTrLocaleFilesPromises = {};
         try {
@@ -64,7 +70,7 @@ export default function transformAppFile(ctx) {
     importsCode += `\n`;
     code += `\n
 
-    _eTr.init({
+    ${isCompositionApi ? `` : `this.`}_eTr.init({
         translations: _eTrTranslations,
         assetsDir: "${ctx.options.assetsDir}",
         additionalLocalesDirs: ${JSON.stringify(ctx.options.additionalLocalesDirs)},
@@ -99,7 +105,7 @@ export default function transformAppFile(ctx) {
     }
 
     if (/<script.*>/.test(ctx.src.original)) {
-        if (/<script.*\s+setup.*>/.test(ctx.src.original)) {
+        if (isCompositionApi) {
             // Composition API
             const index = getVueEndOfImportsIndex(ctx.src.original);
             if (index >= 0) {
