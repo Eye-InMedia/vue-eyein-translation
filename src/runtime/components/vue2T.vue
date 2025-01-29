@@ -45,7 +45,7 @@ export default {
                 data = {...data, ...this.value.data}
             }
 
-            let result = this.tr(this.value, data);
+            let result = this._eTr.tr(this.value, data);
 
             for (const filter of filters) {
                 if (this[filter]) {
