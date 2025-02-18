@@ -12,6 +12,8 @@ export default function saveLocales(ctx, localesToSave = null) {
             continue;
         }
 
+        delete ctx.translations[locale].$fingerprint;
+
         if (!ctx.hmr) {
             if (ctx.options.purgeOldTranslations) {
                 for (const translationId in ctx.translations[locale]) {
@@ -59,6 +61,8 @@ export default function saveLocales(ctx, localesToSave = null) {
 
             fingerprintArray.push(translationId + JSON.stringify(localeTranslations[translationId]))
         }
+
+        console.log(fingerprintArray);
 
         // Sort alphabetically locale object
         const entries = Object.entries(localeTranslations);
