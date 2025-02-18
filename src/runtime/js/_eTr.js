@@ -120,10 +120,10 @@ export function tr(value, data = null, locale = null) {
     const shortLocale = locale.split(`-`).shift();
 
     let result = null;
-    if (value.hasOwnProperty(locale) && value[locale]) {
+    if (value.hasOwnProperty(locale)) {
         // exact matching locale inside translation object
         result = value[locale];
-    } else if (value.hasOwnProperty(shortLocale) && value[shortLocale]) {
+    } else if (value.hasOwnProperty(shortLocale)) {
         // partial matching locale inside translation object (ex: fr-CA matches fr translation)
         result = value[shortLocale];
     } else if (value.id) {
