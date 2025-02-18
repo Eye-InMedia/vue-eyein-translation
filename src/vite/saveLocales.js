@@ -62,8 +62,6 @@ export default function saveLocales(ctx, localesToSave = null) {
             fingerprintArray.push(translationId + JSON.stringify(localeTranslations[translationId]))
         }
 
-        console.log(fingerprintArray);
-
         // Sort alphabetically locale object
         const entries = Object.entries(localeTranslations);
         entries.sort((a, b) => {
