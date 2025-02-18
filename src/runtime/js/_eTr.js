@@ -119,7 +119,7 @@ export function tr(value, data = null, locale = null) {
     locale ||= _eLocale.value;
     const shortLocale = locale.split(`-`).shift();
 
-    let result;
+    let result = null;
     if (value.hasOwnProperty(locale) && value[locale]) {
         // exact matching locale inside translation object
         result = value[locale];
@@ -140,7 +140,11 @@ export function tr(value, data = null, locale = null) {
         }
     }
 
-    if (!result) {
+    if (result === ``) {
+        return ``;
+    }
+
+    if (result === null) {
         if (typeof value === `string`) {
             return `Missing ${locale} translation for: ${value}`;
         } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
