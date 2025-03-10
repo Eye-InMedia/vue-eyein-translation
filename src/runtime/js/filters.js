@@ -24,6 +24,10 @@ export function applyFilter(filter, value, locale, localeOptions) {
 }
 
 export function capitalize(value) {
+    if (!value) {
+        return ``;
+    }
+
     return value[0].toUpperCase() + value.substring(1);
 }
 
