@@ -1,4 +1,4 @@
-import {useRequestHeaders, useNuxtApp, useCookie} from '#app'
+import {useRequestHeaders, useNuxtApp, useCookie, useState} from '#app'
 
 /**
  *
