@@ -1,4 +1,4 @@
-import {useNuxtApp, useCookie} from '#app'
+import {useNuxtApp, useCookie, useState} from '#app'
 import {watch} from 'vue'
 
 export default async function setLocaleWatcher() {
