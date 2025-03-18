@@ -584,9 +584,13 @@ or
 ```
 
 ```html
-<div><t :d="{n: 0}">{no time|1 minute|{n} minutes} left</t></div>
-<div><t :d="{n: 1}">{no time|1 minute|{n} minutes} left</t></div>
-<div><t :d="{n: 10}">{no time|1 minute|{n} minutes} left</t></div>
+<t :d="{n: 0}">{no time|1 minute|{n} minutes} left</t>
+<t :d="{n: 1}">{no time|1 minute|{n} minutes} left</t>
+<t :d="{n: 10}">{no time|1 minute|{n} minutes} left</t>
+<t :d="{count: 10, minutesLeft: 2}">
+    {No cookies were|Only 1 cookie was|Already {count} cookies were} made and {no time was|there was 1 minute|there were {minutesLeft} minutes} left
+</t>
+
 ```
 Result:
 ```
