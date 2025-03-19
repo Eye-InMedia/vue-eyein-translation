@@ -1,10 +1,9 @@
-import {useNuxtApp} from '#app'
+import _eTr from "../js/_eTr.js";
 
 /**
  *
  * @returns {Array<string>}
  */
 export default function getLocales() {
-    const nuxtApp = useNuxtApp();
-    return nuxtApp.vueApp.config.globalProperties._eTr.getLocales();
+    return _eTr.getLocales();
 }

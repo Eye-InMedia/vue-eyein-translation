@@ -20,10 +20,13 @@ npm i vue-eyein-translation
 #### Vue 3
 src/main.js
 ```js
-import { createApp } from 'vue'
+import { createApp } from "vue";
 import vueEyeinTranslation from "vue-eyein-translation/vue3.js";
 
-const app = createApp({})
+const app = createApp({});
+
+await vueEyeinTranslation.loadBrowserLocale();
+// or: await vueEyeinTranslation.loadLocale('en-US');
 
 app.use(vueEyeinTranslation);
 
@@ -33,14 +36,17 @@ app.mount('#app');
 #### Vue 2
 src/main.js
 ```js
-import Vue from 'vue'
+import Vue from "vue";
 import vueEyeinTranslation from "vue-eyein-translation/vue2.js";
+
+await vueEyeinTranslation.loadBrowserLocale();
+// or: await vueEyeinTranslation.loadLocale('en-US');
 
 Vue.use(vueEyeinTranslation);
 
 new Vue({
     render: h => h(App)
-}).$mount(`#app`);
+}).$mount('#app');
 ```
 
 #### Nuxt 3
@@ -77,7 +83,6 @@ export default defineNuxtConfig({
     ]
     // ...
 })
-
 ```
 
 

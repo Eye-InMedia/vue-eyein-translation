@@ -1,4 +1,4 @@
-import {useNuxtApp} from '#app'
+import _eTr from "../js/_eTr.js";
 
 /**
  *
@@ -8,6 +8,5 @@ import {useNuxtApp} from '#app'
  * @returns {string}
  */
 export default function tr(value, data = null, locale = null) {
-    const nuxtApp = useNuxtApp();
-    return nuxtApp.vueApp.config.globalProperties._eTr.tr(value, data, locale);
+    return _eTr.tr(value, data, locale);
 }

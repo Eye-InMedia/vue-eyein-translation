@@ -1,11 +1,10 @@
 import defaultOptions from "./src/defaultOptions.js";
 import transformVueFile from "./src/vite/transformVueFile.js";
 import transformLocaleFile from "./src/vite/transformLocaleFile.js";
-import transformAppFile from "./src/vite/transformAppFile.js";
 import saveLocales from "./src/vite/saveLocales.js";
 import loadLocales from "./src/vite/loadLocales.js";
-import path from "path";
 import MagicString from "magic-string";
+import transformVueEyeinTranslationFile from "./src/vite/transformVueEyeinTranslationFile.js";
 
 export default function viteEyeinTranslation(options = {}) {
     options = {...defaultOptions, ...options};
@@ -31,16 +30,16 @@ export default function viteEyeinTranslation(options = {}) {
             saveLocales({options, translations, additionalTranslations, hmr});
         },
         transform(code, fileId) {
-            const appFileId = path.join(process.cwd(), options.appPath).replace(/\\/g, `/`);
+
+
 
             /**
              * @type {MagicString|null}
              */
             let src = null;
-            if (appFileId === fileId) {
+            if (fileId.endsWith(`/_eTr.js`)) {
                 src = new MagicString(code);
-                transformAppFile({options, fileId, src, hmr});
-                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
+                transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr});
             } else if (/\.vue$/.test(fileId)) {
                 src = new MagicString(code);
                 transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});

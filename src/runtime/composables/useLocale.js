@@ -1,53 +1,39 @@
-import {useRequestHeaders, useNuxtApp, useCookie, useState} from '#app'
+import {useRequestHeaders, useCookie, useState} from '#app'
+import _eTr from "../js/_eTr.js";
 
 /**
  *
  * @returns {Ref<string>}
  */
 export default function useLocale() {
-    const nuxtApp = useNuxtApp();
-
-    let locale;
-
     const localeState = useState(`locale`);
     const localeCookie = useCookie(`locale`, {secure: true, sameSite: true});
-    locale = localeState.value || localeCookie.value;
 
-    const locales = nuxtApp.vueApp.config.globalProperties._eTr.getLocales()
-
-    let localeUpdated = false;
-    if (!locale) {
-        if (process.server) {
-            const headers = useRequestHeaders([`accept-language`])
-            if (headers[`accept-language`]) {
-                locale = nuxtApp.vueApp.config.globalProperties._eTr.getNavigatorLocale(headers[`accept-language`].split(`,`))
-                localeUpdated = true;
-            }
-        } else {
-            locale = nuxtApp.vueApp.config.globalProperties._eTr.getNavigatorLocale()
-            localeUpdated = true;
-        }
-
-        if (!locale) {
-            locale = locales[0]
-            localeUpdated = true;
-        }
+    if (!localeState.value) {
+        localeState.value = localeCookie.value;
     }
 
-    if (!locales.includes(locale)) {
-        const shortLocale = locale.split('-').shift()
-        const similarLocale = locales.find(l => l.startsWith(shortLocale))
-        if (similarLocale) {
-            locale = similarLocale;
-            localeUpdated = true;
-        }
+    if (localeState.value) {
+        return localeState;
     }
 
-    if (localeUpdated) {
-        localeState.value = locale;
-        localeCookie.value = locale;
-        nuxtApp.vueApp.config.globalProperties._eTr.setLocale(locale);
+    let locale;
+    if (process.server) {
+        const headers = useRequestHeaders([`accept-language`]);
+        if (headers[`accept-language`]) {
+            const navigatorLocales = headers[`accept-language`]
+                .split(`,`)
+                .map(weightedLocale => {
+                    return weightedLocale.split(`;`).shift();
+                });
+            locale = _eTr.getNearestLocale(navigatorLocales);
+        }
+    } else {
+        locale = _eTr.getNearestLocale(navigator.languages);
     }
+
+    localeState.value = locale;
+    localeCookie.value = locale;
 
     return localeState;
 }

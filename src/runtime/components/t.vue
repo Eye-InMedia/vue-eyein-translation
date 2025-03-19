@@ -6,7 +6,6 @@
 <script>
 import SimpleMarkdownParser from "../js/SimpleMarkdownParser.js";
 import {applyFilter, getAllFilters} from "../js/filters.js";
-import _eTr from "../js/_eTr.js";
 
 const props = {
     value: {
@@ -54,10 +53,10 @@ export default {
 
             let result = this._eTr.tr(this.value, data);
 
-            const localeOptions = _eTr.getLocaleOptions(_eTr.locale.value);
+            const localeOptions = this._eTr.getLocaleOptions(this._eTr.getLocale());
             for (const filter of filters) {
                 if (this[filter]) {
-                    result = applyFilter(filter, result, _eTr.locale.value, localeOptions);
+                    result = applyFilter(filter, result, this._eTr.getLocale(), localeOptions);
                 }
             }
 

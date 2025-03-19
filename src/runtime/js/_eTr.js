@@ -1,37 +1,87 @@
-import {ref, computed, watch} from "vue"
-import {applyFilter} from "./filters.js";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
+import {applyFilter} from "./filters.js";
+import {computed, reactive, ref} from "vue";
 
 let localeFilesPromises = {};
+/*{localeFilesPromisesImport}*/
 
-const _eLocale = ref("en-US");
+let assetsDir = ``;
+/*{assetsDir}*/
 
-watch(_eLocale, async newLocale => {
-    await setLocale(newLocale);
-})
+let additionalLocalesDirs = [];
+/*{additionalLocalesDirs}*/
 
-let translations = {};
-let additionalLocalesDirs = []
-let assetsDir = null;
+let locales = [`en-US`];
+/*{locales}*/
 
-export default {
-    init(ctx) {
-        assetsDir = ctx.assetsDir;
-        additionalLocalesDirs = ctx.additionalLocalesDirs;
-        translations = ctx.translations;
-        localeFilesPromises = ctx.localeFilesPromises;
+let translations = reactive({});
+/*{translations}*/
 
-        if (!ctx.nuxt) {
-            _eLocale.value = detectUsedLocale();
+let localeState = ref(null);
+
+if (import.meta.hot) {
+    let localesImportsOrder = [];
+    /*{localesImportsOrder}*/
+
+    // [] will be replaced by locales imports paths
+    import.meta.hot.accept([], modules => {
+        let i = 0;
+        for (const module of modules) {
+            const locale = localesImportsOrder[i];
+            i++;
+            if (!module) {
+                continue;
+            }
+            for (const key in module.default) {
+                translations[locale][key] = module.default[key];
+            }
+        }
+    });
+}
+
+const _eTr = {
+    async loadLocale(locale) {
+        try {
+            if (!locale) {
+                throw new Error(`Cannot load locale "${locale}"`);
+            }
+
+            if (translations.hasOwnProperty(locale)) {
+                // locale already loaded
+                return;
+            }
+
+            for (const url in localeFilesPromises) {
+                if (!url.includes(`${locale}.locale`)) {
+                    continue;
+                }
+
+                let isAdditionalLocale = false;
+                for (const localesDir of additionalLocalesDirs) {
+                    if (url.startsWith(`/` + localesDir)) {
+                        isAdditionalLocale = true;
+                        break;
+                    }
+                }
+
+                if (!isAdditionalLocale && !url.startsWith(`/` + assetsDir)) {
+                    continue;
+                }
+
+                const localeFile = await localeFilesPromises[url]();
+
+                if (isAdditionalLocale) {
+                    translations[locale] = {...localeFile, ...translations[locale]};
+                } else {
+                    translations[locale] = {...translations[locale], ...localeFile};
+                }
+            }
+        } catch (e) {
+            console.error(e);
         }
     },
-    getTranslations() {
-        return translations;
-    },
-    getLocaleTranslations(locale) {
-        return translations[locale];
-    },
+
     getLocaleOptions(locale) {
         if (!translations.hasOwnProperty(locale)) {
             return {};
@@ -44,260 +94,180 @@ export default {
                 return obj;
             }, {});
     },
-    locale: _eLocale,
-    locales: computed(() => Object.keys(translations)),
-    setLocale: setLocale,
-    setLocaleSync: setLocaleSync,
-    loadLocale: loadLocale,
-    getLocale() {
-        return _eLocale.value;
-    },
+
     getLocales() {
-        return Object.keys(translations);
+        return locales;
     },
-    getNavigatorLocale: getNavigatorLocale,
-    tr: tr,
-    trComputed(value, data = null) {
-        return computed(() => tr(value, data, _eLocale.value));
+
+    getLocale() {
+        return localeState.value;
     },
-    getSSRProps: getSSRProps,
-    mountedUpdated: mountedUpdated
-}
 
-export async function setLocale(locale, reactiveAlreadyChanged = false) {
-    const locales = Object.keys(translations);
-    if (!locales.includes(locale)) {
-        console.warn(`Cannot change locale to ${locale} (available locales: ${locales.join(`, `)})`);
-        return;
-    }
-
-    if (Object.keys(translations[locale]).length === 0) {
-        await loadLocale(locale);
-    }
-
-    if (globalThis.localStorage) {
-        localStorage.setItem(`locale`, locale);
-    }
-
-    _eLocale.value = locale;
-}
-
-export function setLocaleSync(locale, reactiveAlreadyChanged = false) {
-    const locales = Object.keys(translations);
-    if (!locales.includes(locale)) {
-        console.warn(`Cannot change locale to ${locale} (available locales: ${locales.join(`, `)})`);
-        return;
-    }
-
-    if (Object.keys(translations[locale]).length === 0) {
-        throw new Error(`Cannot use setLocaleSync with not already loaded locale.`);
-    }
-
-    if (globalThis.localStorage) {
-        localStorage.setItem(`locale`, locale);
-    }
-
-    _eLocale.value = locale;
-}
-
-export function tr(value, data = null, locale = null) {
-    const locales = Object.keys(translations);
-
-    if (typeof value === `string`) {
-        if (value.startsWith(`@@`)) {
-            value = {id: value.replace(`@@`, ``)};
-        } else {
-            try {
-                value = JSON.parse(value);
-            } catch {
-                console.error(`Invalid translation format: ${value}`);
-                return value;
-            }
-        }
-    }
-
-    locale ||= _eLocale.value;
-    const shortLocale = locale.split(`-`).shift();
-
-    let result = null;
-    if (value.hasOwnProperty(locale)) {
-        // exact matching locale inside translation object
-        result = value[locale];
-    } else if (value.hasOwnProperty(shortLocale)) {
-        // partial matching locale inside translation object (ex: fr-CA matches fr translation)
-        result = value[shortLocale];
-    } else if (value.id) {
-        if (translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id]) {
-            // exact matching locale using external locale file
-            result = translations[locale][value.id];
-        } else {
-            const similarLocale = locales.find(l => l.startsWith(shortLocale));
-
-            if (similarLocale && translations.hasOwnProperty(similarLocale) && translations[similarLocale].hasOwnProperty(value.id) && translations[similarLocale][value.id]) {
-                // partial matching locale using external locale file(ex: fr-CA matches fr translation)
-                result = translations[similarLocale][value.id];
-            }
-        }
-    }
-
-    if (result === ``) {
-        return ``;
-    }
-
-    if (result === null) {
-        if (typeof value === `string`) {
-            return `Missing ${locale} translation for: ${value}`;
-        } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
-            return `Missing ${locale} translation for: ${value[`en-US`]}`;
-        } else if (value.id) {
-            return `Missing ${locale} translation for @@${value.id}`;
-        } else {
-            return `Missing ${locale} translation`;
-        }
-    }
-
-    if (!data && value.data) {
-        data = value.data;
-    } else if (!data) {
-        data = {};
-    }
-
-    // Replace double {{variable}} by single {variable}
-    result = result.replace(/\{\{(.+)}}/g, `{$1}`);
-
-    // Pluralization
-    result = pluralize(result, data, locale);
-
-    // Data binding
-    result = replaceDataBindings(result, data, locale, translations[locale]);
-
-    if (value.filters) {
-        for (const filter of value.filters) {
-            result = applyFilter(filter, result, locale, translations[locale]);
-        }
-    }
-
-    return result;
-}
-
-async function loadLocale(locale) {
-    try {
+    setLocale(locale) {
         if (!translations.hasOwnProperty(locale)) {
-            console.warn(`${locale} locale is not available`);
-            return;
+            console.error(`test`)
+            _eTr.loadLocale(locale)
+                .then(() => {
+                    localeState.value = locale;
+                });
+        } else {
+            localeState.value = locale;
         }
+    },
 
-        if (Object.keys(translations[locale]).length > 0) {
-            return;
-        }
-
-        for (const url in localeFilesPromises) {
-            if (!url.includes(`${locale}.locale`)) {
-                continue;
-            }
-
-            let isAdditionalLocale = false;
-            for (const localesDir of additionalLocalesDirs) {
-                if (url.startsWith(`/` + localesDir)) {
-                    isAdditionalLocale = true;
-                    break;
+    tr(value, data = null, locale = null) {
+        if (typeof value === `string`) {
+            if (value.startsWith(`@@`)) {
+                value = {id: value.replace(`@@`, ``)};
+            } else {
+                try {
+                    value = JSON.parse(value);
+                } catch {
+                    console.error(`Invalid translation format: ${value}`);
+                    return value;
                 }
             }
+        }
 
-            if (!isAdditionalLocale && !url.startsWith(`/` + assetsDir)) {
-                continue;
-            }
+        locale ||= localeState.value;
 
-            const localeFile = await localeFilesPromises[url]();
+        if (!locale) {
+            throw new Error(`Unknown locale to translate: ${JSON.stringify(value)}, localeState: ${JSON.stringify(localeState)}`);
+        }
 
-            if (isAdditionalLocale) {
-                translations[locale] = {...localeFile, ...translations[locale]};
+        const shortLocale = locale.split(`-`).shift();
+
+        let result = null;
+        if (value.hasOwnProperty(locale)) {
+            // exact matching locale inside translation object
+            result = value[locale];
+        } else if (value.hasOwnProperty(shortLocale)) {
+            // partial matching locale inside translation object (ex: fr-CA matches fr translation)
+            result = value[shortLocale];
+        } else if (value.id) {
+            if (translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id]) {
+                // exact matching locale using external locale file
+                result = translations[locale][value.id];
             } else {
-                translations[locale] = {...translations[locale], ...localeFile};
-            }
-        }
-    } catch (e) {
-        console.error(e);
-    }
-}
+                const similarLocale = locales.find(l => l.startsWith(shortLocale));
 
-export function getSSRProps(binding) {
-    if (!binding.arg) {
-        return;
-    }
-
-    if (!binding.value) {
-        return;
-    }
-
-    let ssrProps = {};
-
-    const locale = _eLocale.value;
-
-    let result = tr(binding.value, null);
-
-    const filters = Object.keys(binding.modifiers);
-    for (const filter of filters) {
-        result = applyFilter(filter, result, locale, translations[locale]);
-    }
-
-    ssrProps[binding.arg] = result;
-
-    return ssrProps;
-}
-
-export function mountedUpdated(el, binding) {
-    const ssrProps = getSSRProps(binding);
-    if (!ssrProps) {
-        return;
-    }
-
-    const attribute = Object.keys(ssrProps).pop();
-    const value = Object.values(ssrProps).pop();
-
-    el.setAttribute(attribute, value);
-}
-
-export function getNavigatorLocale(acceptedLocales = null) {
-    try {
-        const locales = Object.keys(translations);
-
-        let locale;
-        if (!acceptedLocales) {
-            if (navigator.languages && navigator.languages.length > 0) {
-                acceptedLocales = navigator.languages;
-            } else if (navigator.languages) {
-                acceptedLocales = navigator.language.split(`,`);
+                if (similarLocale && translations.hasOwnProperty(similarLocale) && translations[similarLocale].hasOwnProperty(value.id) && translations[similarLocale][value.id]) {
+                    // partial matching locale using external locale file(ex: fr-CA matches fr translation)
+                    result = translations[similarLocale][value.id];
+                }
             }
         }
 
-        for (const acceptedLocale of acceptedLocales) {
-            const l = acceptedLocale.split(`;`).shift();
-            if (locales.includes(l)) {
-                locale = l;
-                break;
+        if (result === ``) {
+            return ``;
+        }
+
+        if (result === null) {
+            if (typeof value === `string`) {
+                return `Missing ${locale} translation for: ${value}`;
+            } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
+                return `Missing ${locale} translation for: ${value[`en-US`]}`;
+            } else if (value.id) {
+                return `Missing ${locale} translation for @@${value.id}`;
+            } else {
+                return `Missing ${locale} translation`;
+            }
+        }
+
+        if (!data && value.data) {
+            data = value.data;
+        } else if (!data) {
+            data = {};
+        }
+
+        // Replace double {{variable}} by single {variable}
+        result = result.replace(/\{\{(.+)}}/g, `{$1}`);
+
+        // Pluralization
+        result = pluralize(result, data, locale);
+
+        // Data binding
+        result = replaceDataBindings(result, data, locale, translations[locale]);
+
+        if (value.filters) {
+            for (const filter of value.filters) {
+                result = applyFilter(filter, result, locale, translations[locale]);
+            }
+        }
+
+        return result;
+    },
+
+    trComputed(value, data = null) {
+        return computed(() => _eTr.tr(value, data, localeState.value));
+    },
+
+    getNearestLocale(navigatorLocales = [`en-US`]) {
+        for (const navigatorLocale of navigatorLocales) {
+            if (locales.includes(navigatorLocale)) {
+                return navigatorLocale;
             }
 
-            const shortLocale = l.substring(0, 2);
+            const shortNavigatorLocale = navigatorLocale.substring(0, 2);
 
-            const similarLocale = locales.find(loc => loc.startsWith(shortLocale));
+            const similarLocale = locales.find(l => l.startsWith(shortNavigatorLocale));
             if (similarLocale) {
-                locale = similarLocale;
-                break;
+                return similarLocale;
             }
         }
 
-        return locale || locales[0];
-    } catch (e) {
-        console.error(e);
-        return `en-US`;
+        return locales[0];
+    },
+
+    getSSRProps(binding) {
+        if (!binding.arg) {
+            return;
+        }
+
+        if (!binding.value) {
+            return;
+        }
+
+        let ssrProps = {};
+
+        const locale = localeState.value;
+
+        let result = _eTr.tr(binding.value, null);
+
+        const filters = Object.keys(binding.modifiers);
+        for (const filter of filters) {
+            result = applyFilter(filter, result, locale, translations[locale]);
+        }
+
+        ssrProps[binding.arg] = result;
+
+        return ssrProps;
+    },
+
+    mountedUpdated(el, binding) {
+        const ssrProps = _eTr.getSSRProps(binding);
+        if (!ssrProps) {
+            return;
+        }
+
+        const attribute = Object.keys(ssrProps).pop();
+        const value = Object.values(ssrProps).pop();
+
+        el.setAttribute(attribute, value);
+    },
+
+    detectBrowserLocale() {
+        if (!globalThis.localStorage || !globalThis.navigator) {
+            return null;
+        }
+
+        const locale = localStorage.getItem(`locale`);
+        if (!locale) {
+            return _eTr.getNearestLocale(navigator.languages);
+        }
+
+        return locale;
     }
 }
 
-export function detectUsedLocale() {
-    if (!localStorage || !localStorage.getItem(`locale`)) {
-        return getNavigatorLocale();
-    }
-
-    return localStorage.getItem(`locale`);
-}
+export default _eTr;

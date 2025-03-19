@@ -3,6 +3,15 @@ import TComponent from "./src/runtime/components/vue2T.vue";
 import _eTr from "./src/runtime/js/_eTr.js";
 
 export default {
+    async loadLocale(locale) {
+        await _eTr.loadLocale(locale);
+        _eTr.setLocale(locale);
+    },
+    async loadBrowserLocale() {
+        const locale = _eTr.detectBrowserLocale();
+        await _eTr.loadLocale(locale);
+        _eTr.setLocale(locale);
+    },
     install(app, options) {
         options = {...defaultOptions, ...options};
 
@@ -13,24 +22,24 @@ export default {
             throw new Error(`Should never be called. Modified at compile time.`)
         }
 
-        app.prototype._eTr = _eTr;
-        app.prototype.tr = _eTr.tr;
-        app.prototype.trComputed = _eTr.trComputed;
-        app.prototype.locale = _eTr.locale;
-        app.prototype.locales = _eTr.locales;
-        app.prototype.getLocale = _eTr.getLocale;
-        app.prototype.getLocales = _eTr.getLocales;
-        app.prototype.setLocale = _eTr.setLocale;
-        app.prototype.loadLocale = _eTr.loadLocale;
+        const eTr = options._eTr || _eTr;
+
+        app.prototype._eTr = eTr;
+        app.prototype.tr = eTr.tr;
+        app.prototype.trComputed = eTr.trComputed;
+        app.prototype.getLocale = eTr.getLocale;
+        app.prototype.getLocales = eTr.getLocales;
+        app.prototype.setLocale = eTr.setLocale;
+        app.prototype.loadLocale = eTr.loadLocale;
         app.prototype.staticTr = compiledThrow;
         app.prototype.staticTr = compiledThrow;
 
         app.directive(`t`, {
-            bind: _eTr.mountedUpdated,
-            update: _eTr.mountedUpdated,
-            mounted: _eTr.mountedUpdated,
-            updated: _eTr.mountedUpdated,
-            getSSRProps: _eTr.getSSRProps
+            bind: eTr.mountedUpdated,
+            update: eTr.mountedUpdated,
+            mounted: eTr.mountedUpdated,
+            updated: eTr.mountedUpdated,
+            getSSRProps: eTr.getSSRProps
         });
 
         app.component(`t`, TComponent);

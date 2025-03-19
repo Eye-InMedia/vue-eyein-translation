@@ -5,7 +5,6 @@ export default defineNuxtConfig({
     vueEyeinTranslation: {
         locales: [`en-US`, `fr-CA`],
         inlineLocales: `en-US||fr-CA`,
-        appPath: `playground/app.vue`,
         debug: true
     }
 })

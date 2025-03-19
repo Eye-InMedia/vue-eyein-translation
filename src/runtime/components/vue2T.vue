@@ -47,9 +47,10 @@ export default {
 
             let result = this._eTr.tr(this.value, data);
 
+            const localeOptions = this._eTr.getLocaleOptions(this._eTr.getLocale());
             for (const filter of filters) {
                 if (this[filter]) {
-                    result = applyFilter(filter, result);
+                    result = applyFilter(filter, result, this._eTr.getLocale(), localeOptions);
                 }
             }
 
