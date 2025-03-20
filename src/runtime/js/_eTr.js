@@ -86,7 +86,6 @@ const _eTr = {
         if (!translations.hasOwnProperty(locale)) {
             return {};
         }
-
         return Object.keys(translations[locale])
             .filter(key => key.startsWith(`$`))
             .reduce((obj, key) => {
@@ -105,7 +104,6 @@ const _eTr = {
 
     setLocale(locale) {
         if (!translations.hasOwnProperty(locale)) {
-            console.error(`test`)
             _eTr.loadLocale(locale)
                 .then(() => {
                     localeState.value = locale;

@@ -8,5 +8,5 @@ import _eTr from "../js/_eTr.js";
  * @returns {string}
  */
 export default function tr(value, data = null, locale = null) {
-    return _eTr.tr(value, data, locale);
+    return _eTr.trComputed(value, data, locale);
 }
