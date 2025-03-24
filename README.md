@@ -60,7 +60,7 @@ export default defineNuxtConfig({
             locales: [`en-US`, `fr-CA`, `es-ES`],
             inlineLocales: `en-US||fr-CA`,
             assetsDir: `assets`,
-            additionalLocalesDirs: [`vue-components/locales`],
+            additionalLocalesDirs: [`mygitsubmodule/locales`],
             autoTranslate: {
                 locales: [`es-ES`],
                 async translationFunction(fromLocale, toLocale, textsToTranslate) {
@@ -112,7 +112,7 @@ export default defineConfig(config => {
 ```
 
 ### Configuration
-You can create a file `eyein-translation.config.js` in the root directory
+You can for example create a file `eyein-translation.config.js` and import it in the vite.config.js (or in nuxt.config.js)
 
 ```js
 export default {
@@ -127,23 +127,6 @@ export default {
 ```
 
 - All locale files will be in `/src/assets/locales` in **JSON** format
-- First inline locale will be used as fallback locale when no translation is found. In this example, `en-US` is the fallback locale
-
-
-For Nuxt:
-You can then import it when you load the plugin:
-```js
-import eyeinTranslationConfig from "../eyein-translation.config.js";
-
-// main.js
-app.use(vueEyeinTranslation, eyeinTranslationConfig);
-
-// vite.config.js
-viteEyeinTranslation(eyeinTranslationConfig)
-
-// nuxt.config.js
-[`vue-eyein-translation`, eyeinTranslationConfig]
-```
 
 ### Auto translation
 
@@ -226,6 +209,7 @@ const staticTr = inject(`staticTr`)
 const jsTranslation = staticTr(`Javascript translation||Traduction dans le Javascript`)
 
 // use staticTrComputed if you want it to be reactive to locale changes (beware of .value)
+const staticTrComputed = inject(`staticTrComputed`)
 const jsTranslationComputed = staticTrComputed(`Javascript translation||Traduction dans le Javascript`)
 
 ```
@@ -258,10 +242,6 @@ const jsTranslationComputed = staticTrComputed(`Javascript translation||Traducti
 // Composition API
 const tr = inject(`tr`);
 console.log(tr(jsTranslationObject));
-
-// with locale watch:
-const tr = inject(`tr`);
-const jsTranslation = tr(jsTranslationObject);
 
 const trComputed = inject(`trComputed`);
 const jsTranslationComputed = trComputed(jsTranslationObject);

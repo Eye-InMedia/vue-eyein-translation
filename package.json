@@ -24,7 +24,8 @@
     },
     "dependencies": {
         "@nuxt/kit": "^3.14.1592",
-        "magic-string": "^0.30.14"
+        "magic-string": "^0.30.14",
+        "node-html-parser": "^7.0.1"
     },
     "devDependencies": {
         "@nuxt/devtools": "^1.6.3",

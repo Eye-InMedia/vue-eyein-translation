@@ -11,6 +11,9 @@
                 <t id.1="myId" class.1.2="highlighted" class.2="bordered">
                     This *word*(1) must have class .highlighted and id #myId.
                     Another **words**(2) with __only__(2) the class .highlighted but different tags
+                    ||
+                    Ce *mot*(1) doit avoir la classe .highlighted et l'id #myId.
+                    Autres **mots**(2) avec __seulement__(2) la classe .highlighted mais avec differentes balises
                 </t>
             </li>
             <li>

@@ -1,4 +1,5 @@
-import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex, getVueEndOfImportsIndex} from "./viteUtils.js";
+import {parse} from "node-html-parser";
+import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
 const rootDir = process.cwd().replace(/\\/g, `/`);
@@ -10,14 +11,12 @@ const hmrLocalesUpdate = debounce(ctx => {
     }
     saveLocales(ctx, [...updatedLocales]);
     updatedLocales = new Set();
-}, 500)
+}, 500);
 
 export default function transformVueFile(ctx) {
     if (ctx.fileId.includes(`/node_modules/`) || ctx.fileId.includes(`/t.vue`) || ctx.fileId.includes(`/vue2T.vue`)) {
         return false;
     }
-
-    // console.log(`transformVueFile`, ctx.fileId);
 
     ctx.relativePath = ctx.fileId.replace(rootDir, ``);
     ctx.currentFileTranslations = {};
@@ -28,17 +27,196 @@ export default function transformVueFile(ctx) {
         }
     }
 
-    transformTranslationComponents(ctx);
-    transformTranslationDotTAttributes(ctx);
-    transformTranslationVTDotAttributes(ctx);
-    transformTranslationVTColonAttributes(ctx);
-    transformJSTranslation(ctx);
+    const root = parse(ctx.src.toString());
+
+    for (const rootNode of root.childNodes) {
+        if (!rootNode.tagName) {
+            continue;
+        }
+
+        switch (rootNode.tagName) {
+            case "TEMPLATE":
+                transformTemplate(ctx, rootNode);
+                break;
+            case "SCRIPT":
+                transformScript(ctx, rootNode);
+                break;
+        }
+    }
 
     if (ctx.hmr) {
         hmrLocalesUpdate(ctx);
     }
 
     // console.log(ctx.fileId, ctx.src.toString());
+}
+
+function transformTemplate(ctx, rootNode) {
+    if (!rootNode.tagName) {
+        return;
+    }
+
+    if (rootNode.tagName === `T`) {
+        transformTranslationComponents(ctx, rootNode);
+        return;
+    } else {
+        transformTranslationAttributes(ctx, rootNode);
+    }
+
+    for (const childNode of rootNode.childNodes) {
+        transformTemplate(ctx, childNode);
+    }
+}
+
+function transformTranslationAttributes(ctx, rootNode) {
+    for (const srcAttributeName in rootNode.attributes) {
+        if (srcAttributeName.startsWith(`v-t:`)) {
+            transformTranslationVTColonAttribute(ctx, rootNode, srcAttributeName);
+        } else if (srcAttributeName.startsWith(`v-t.`)) {
+            transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName);
+        } else if (srcAttributeName.endsWith(`.t`)) {
+            transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName);
+        }
+    }
+}
+
+function transformTranslationComponents(ctx, rootNode) {
+    if (`value` in rootNode.attributes || `:value` in rootNode.attributes) {
+        return;
+    }
+
+    const line = findLineNumber(rootNode.range, ctx.src.original);
+    const location = `<t> tag at (${ctx.relativePath}:${line})`;
+    const dataStr = rootNode.attributes[`:d`] || ``;
+    const translationObjectString = createTranslationObjectString(ctx, rootNode.innerHTML, location, dataStr);
+
+    ctx.src.appendLeft(rootNode.range[0] + 2, ` :value="${translationObjectString}"`);
+
+    let start = null;
+    let end = null;
+    for (const childNode of rootNode.childNodes) {
+        if (start === null || start > childNode.range[0]) {
+            start = childNode.range[0];
+        }
+
+        if (end === null || end < childNode.range[1]) {
+            end = childNode.range[1];
+        }
+    }
+
+    ctx.src.remove(start, end);
+}
+
+function transformTranslationVTColonAttribute(ctx, rootNode, srcAttributeName) {
+    const filters = srcAttributeName.replace(`v-t:`, ``).split(`.`);
+    const attributeName = filters.shift();
+
+    if (!(attributeName in rootNode.attributes)) {
+        return;
+    }
+
+    const line = findLineNumber(rootNode.range, ctx.src.original);
+    const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
+    const translationStr = rootNode.attributes[attributeName];
+    const datStr = rootNode.attributes[srcAttributeName];
+    const translationObjectString = createTranslationObjectString(ctx, translationStr, location, datStr, filters);
+
+    const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+    let matches = rootNode.outerHTML.match(attributeRegex);
+    if (matches && matches.length >= 1) {
+        const start = rootNode.range[0] + matches.indices[0][0];
+        const end = rootNode.range[0] + matches.indices[0][1];
+        ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+    }
+
+    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)"))?`, `d`);
+    matches = rootNode.outerHTML.match(directiveRegex);
+    if (matches && matches.length >= 1) {
+        const start = rootNode.range[0] + matches.indices[0][0];
+        const end = rootNode.range[0] + matches.indices[0][1];
+        ctx.src.remove(start, end);
+    }
+}
+
+function transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName) {
+    const attributes = srcAttributeName.split(`.`);
+    attributes.shift();
+
+    const line = findLineNumber(rootNode.range, ctx.src.original);
+
+    for (const attributeName of attributes) {
+        if (!(attributeName in rootNode.attributes)) {
+            continue;
+        }
+
+        const translationStr = rootNode.attributes[attributeName];
+        const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
+        const datStr = rootNode.attributes[srcAttributeName];
+        const translationObjectString = createTranslationObjectString(ctx, translationStr, location, datStr);
+
+        const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+        let matches = rootNode.outerHTML.match(attributeRegex);
+        if (matches && matches.length >= 1) {
+            const start = rootNode.range[0] + matches.indices[0][0];
+            const end = rootNode.range[0] + matches.indices[0][1];
+            ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+        }
+    }
+
+    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)"))?`, `d`);
+    const matches = rootNode.outerHTML.match(directiveRegex);
+    if (matches && matches.length >= 1) {
+        const start = rootNode.range[0] + matches.indices[0][0];
+        const end = rootNode.range[0] + matches.indices[0][1];
+        ctx.src.remove(start, end);
+    }
+}
+
+
+function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
+    const attributeName = srcAttributeName.replace(/\.t$/, ``);
+
+    const line = findLineNumber(rootNode.range, ctx.src.original);
+    const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
+    const translationStr = rootNode.attributes[srcAttributeName];
+    const translationObjectString = createTranslationObjectString(ctx, translationStr, location);
+
+    const attributeRegex = new RegExp(`\\s+${srcAttributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+    let matches = rootNode.outerHTML.match(attributeRegex);
+    if (matches && matches.length >= 1) {
+        const start = rootNode.range[0] + matches.indices[0][0];
+        const end = rootNode.range[0] + matches.indices[0][1];
+        ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+    }
+}
+
+function transformScript(ctx, rootNode) {
+    const scriptNodeText = rootNode.outerHTML;
+
+    let hasMatches = false;
+
+    let allMatches = scriptNodeText.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+    for (const matches of allMatches) {
+        const fullMatch = matches[0];
+        const line = findLineNumber(matches.indices[3], ctx.src.original);
+        const thisStr = matches[1] || ``;
+        const computedStr = matches[2] || ``;
+        const srcStr = matches[3];
+        const location = `JS template literal at (${ctx.relativePath}:${line})`;
+
+        let dataStr = ``;
+        if (matches.length > 4) {
+            dataStr = matches[4];
+        }
+
+        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
+        ctx.src.replaceAll(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
+        hasMatches = true;
+    }
+
+    if (hasMatches) {
+        injectTrComposable(ctx);
+    }
 }
 
 function injectTrComposable(ctx) {
@@ -70,210 +248,12 @@ function injectTrComposable(ctx) {
     }
 }
 
-function transformTranslationComponents(ctx) {
-    const originalSrc = ctx.src.original;
-
-    let hasMatches = false;
-
-    let allMatches = originalSrc.matchAll(/<t((?: [^>]+)*?(?: :d="(.+?)")?(?: [^>]+)*?)>((?:[^<>]|<br>)+?)<\/t>/gd);
-    for (const matches of allMatches) {
-        const fullMatch = matches[0];
-        const propsStr = matches[1] ? matches[1] : ``;
-        const dataStr = matches[2] ? matches[2] : ``;
-        const srcStr = matches[3];
-        const line = findLineNumber(matches.indices[3], originalSrc);
-        const location = `<t> tag at (${ctx.relativePath}:${line})`;
-        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        ctx.src.replaceAll(fullMatch, `<t${propsStr} :value="${translationObjectString}"></t>`);
-        hasMatches = true;
-    }
-
-    if (hasMatches) {
-        injectTrComposable(ctx);
-    }
-}
-
-// replace notation attribute.t="Text to translate"
-function transformTranslationDotTAttributes(ctx) {
-    const originalSrc = ctx.src.original;
-
-    let hasMatches = false;
-
-    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+[\w-]+\.t=".+?"[^<>]*?>/sdg);
-    for (const tagMatches of allTagsMatches) {
-        hasMatches = true;
-
-        /**
-         * @type {string}
-         */
-        const fullMatch = tagMatches[0];
-        let newTag = fullMatch;
-        const tagName = tagMatches[1];
-        let tagLine = findLineNumber(tagMatches.indices[0], originalSrc);
-
-        let allAttributesMatches = fullMatch.matchAll(/\s+([\w-]+)\.t="(.+?)"/sdg);
-        for (const attributeMatches of allAttributesMatches) {
-            const fullAttributeMatch = attributeMatches[0];
-            const attribute = attributeMatches[1];
-            const srcStr = attributeMatches[2];
-            const line = tagLine + findLineNumber(attributeMatches.indices[1], fullMatch);
-            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${line})`;
-
-            const translationObjectString = createTranslationObjectString(ctx, srcStr, location);
-            newTag = newTag.replace(fullAttributeMatch, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-        }
-
-        ctx.src.replaceAll(fullMatch, newTag);
-    }
-
-    if (hasMatches) {
-        injectTrComposable(ctx);
-    }
-}
-
-// replace notation attribute1="Text to translate" attribute2="Another text to translate" v-t.attribute1.attribute2="data"
-function transformTranslationVTDotAttributes(ctx) {
-    const originalSrc = ctx.src.original;
-
-    let hasMatches = false;
-
-    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+v-t(?:\.[\w-]+)+(?:=".+?")?[^<>]*?>/sdg);
-    for (const matches of allTagsMatches) {
-        hasMatches = true;
-
-        /**
-         * @type {string}
-         */
-        const fullMatch = matches[0];
-        let newTag = fullMatch;
-        const tagName = matches[1];
-        const tagLine = findLineNumber(matches.indices[1], originalSrc);
-
-        let allDirectivesMatches = fullMatch.matchAll(/\s+(v-t(?:\.[\w-]+)+)(?:="(.+?)")?/sdg);
-        for (const directiveMatches of allDirectivesMatches) {
-            const fullDirectiveMatch = directiveMatches[0];
-            const directive = directiveMatches[1];
-
-            const attributes = directive.split(`.`);
-            attributes.shift();
-
-            let dataStr = ``;
-            if (directiveMatches.length > 1) {
-                dataStr = directiveMatches[2];
-            }
-
-            for (const attribute of attributes) {
-                const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${tagLine})`;
-
-                const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
-                const result = newTag.match(attributeRegex);
-
-                if (result && result.length >= 2) {
-                    const srcStr = result[1] || result[2];
-                    const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-                    newTag = newTag.replace(fullDirectiveMatch, ``)
-                        .replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-                }
-            }
-        }
-
-        ctx.src.replaceAll(fullMatch, newTag);
-    }
-
-    if (hasMatches) {
-        injectTrComposable(ctx);
-    }
-}
-
-// replace notation attribute="Text to translate" v-t:attribute.filter1.filter2="data"
-function transformTranslationVTColonAttributes(ctx) {
-    const originalSrc = ctx.src.original;
-
-    let hasMatches = false;
-
-    let allTagsMatches = ctx.src.toString().matchAll(/<(\w+)[^<>]*?\s+v-t:[\w-]+(?:\.[\w-]+)*(?:=".+?")?[^<>]*?>/sdg);
-    for (const matches of allTagsMatches) {
-        hasMatches = true;
-
-        /**
-         * @type {string}
-         */
-        const fullMatch = matches[0];
-        let newTag = fullMatch;
-        const tagName = matches[1];
-        const tagLine = findLineNumber(matches.indices[1], originalSrc);
-
-        let allDirectivesMatches = fullMatch.matchAll(/\s+v-t:([\w-]+)((?:\.[\w-]+)*)(?:="(.+?)")?/sdg);
-        for (const directiveMatches of allDirectivesMatches) {
-            const fullDirectiveMatch = directiveMatches[0];
-            const attribute = directiveMatches[1];
-
-            let filters = []
-            if (directiveMatches.length > 1) {
-                filters = directiveMatches[2].split(`.`);
-                filters.shift();
-            }
-
-            let dataStr = ``;
-            if (directiveMatches.length > 2) {
-                dataStr = directiveMatches[3];
-            }
-
-            const location = `${attribute} of <${tagName}> at (${ctx.relativePath}:${tagLine})`;
-            const attributeRegex = new RegExp(`\\s+${attribute}=(?:'(.+?)(?<!\\\\)'|"(.+?)(?<!\\\\)")`);
-            const result = newTag.match(attributeRegex);
-
-            if (result && result.length >= 2) {
-                const srcStr = result[1] || result[2];
-                const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr, filters);
-                newTag = newTag.replace(fullDirectiveMatch, ``)
-                    .replace(attributeRegex, ` :${attribute}="_eTr.tr(${translationObjectString})"`);
-            }
-        }
-
-        ctx.src.replaceAll(fullMatch, newTag);
-    }
-
-    if (hasMatches) {
-        injectTrComposable(ctx);
-    }
-}
-
-function transformJSTranslation(ctx) {
-    const originalSrc = ctx.src.original;
-
-    let hasMatches = false;
-
-    let allMatches = ctx.src.toString().matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
-    for (const matches of allMatches) {
-        const fullMatch = matches[0];
-        const line = findLineNumber(matches.indices[3], originalSrc);
-        const thisStr = matches[1] || ``;
-        const computedStr = matches[2] || ``;
-        const srcStr = matches[3];
-        const location = `JS template literal at (${ctx.relativePath}:${line})`;
-
-        let dataStr = ``;
-        if (matches.length > 4) {
-            dataStr = matches[4];
-        }
-
-        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        ctx.src.replaceAll(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
-        hasMatches = true;
-    }
-
-    if (hasMatches) {
-        injectTrComposable(ctx);
-    }
-}
-
-function createTranslationObjectString(ctx, translationString, location, dataStr = ``, filters = []) {
-    if (!translationString) {
+function createTranslationObjectString(ctx, translationStr, location, dataStr = ``, filters = []) {
+    if (!translationStr) {
         throw new Error(`[Eye-In Translation] createTranslationObjectString srcStr is empty (location: ${location})`);
     }
 
-    const {id, groupId, fullId, context, comment, inlineTranslations, source} = parseInlineTranslationString(translationString);
+    const {id, groupId, fullId, context, comment, inlineTranslations, source} = parseInlineTranslationString(translationStr);
 
     const inlineLocales = ctx.options.inlineLocales.split(`||`);
 
@@ -310,13 +290,13 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
             if (localeInlineTranslation) {
                 addFileInlineTranslation(ctx, id, locale, translation, localeInlineTranslation, location);
                 translationFound = true;
+
+                if (!ctx.hmr) {
+                    localeTranslation[id].last_inline = localeInlineTranslation;
+                }
             }
 
-            if (groupId) {
-                localeTranslation[id] = translation;
-            } else {
-                localeTranslation[id] = translation;
-            }
+            localeTranslation[id] = translation;
 
             updatedLocales.add(locale);
         } else if (localeTranslation && localeTranslation.hasOwnProperty(id) && (typeof localeTranslation[id] === `string` || localeTranslation[id].target || localeInlineTranslation)) {
@@ -328,7 +308,7 @@ function createTranslationObjectString(ctx, translationString, location, dataStr
             // change translation file if inline has been updated
             if (localeInlineTranslation && localeTranslation[id].target !== localeInlineTranslation) {
                 if (!ctx.hmr && localeTranslation[id].last_inline && localeTranslation[id].last_inline.trim() !== localeInlineTranslation.trim()) {
-                    throw new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${id}) found with different ${locale} translation. "${source}" is translated by "${localeInlineTranslation}" or "${localeTranslation[id].last_inline}" ?`);
+                    ctx.errors.push(new Error(`[Eye-In Translation] /!\\ Several inline translations (with id ${id}) found with different ${locale} translation. "${source}" is translated by "${localeInlineTranslation}" or "${localeTranslation[id].last_inline}" ?`));
                 }
                 addFileInlineTranslation(ctx, id, locale, localeTranslation[id], localeInlineTranslation, location);
                 updatedLocales.add(locale);
@@ -451,6 +431,7 @@ function parseInlineTranslationString(translationString) {
 
     return {id, groupId, fullId, context, comment, inlineTranslations, source};
 }
+
 
 function addFileInlineTranslation(ctx, translationId, locale, translationObject, localeTranslation, location) {
     translationObject.target = localeTranslation;

@@ -13,6 +13,7 @@ export default function viteEyeinTranslation(options = {}) {
     let translations;
     let additionalTranslations;
     let hmr = false;
+    let errors = [];
 
     return {
         name: `vite-plugin-vue-eyein-translation`,
@@ -25,27 +26,30 @@ export default function viteEyeinTranslation(options = {}) {
             const result = loadLocales({options});
             translations = result.translations;
             additionalTranslations = result.additionalTranslations;
+            errors = [];
         },
         buildEnd() {
+            if (errors.length > 0) {
+                console.error(errors.map(e => e.stack).join(`\n`));
+                throw new AggregateError(errors);
+            }
+
             saveLocales({options, translations, additionalTranslations, hmr});
         },
         transform(code, fileId) {
-
-
-
             /**
              * @type {MagicString|null}
              */
             let src = null;
             if (fileId.endsWith(`/_eTr.js`)) {
                 src = new MagicString(code);
-                transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr});
+                transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\.vue$/.test(fileId)) {
                 src = new MagicString(code);
-                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr});
+                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
                 src = new MagicString(code);
-                transformLocaleFile({options, fileId, src, hmr});
+                transformLocaleFile({options, fileId, src, hmr, errors});
             }
 
             if (src) {
