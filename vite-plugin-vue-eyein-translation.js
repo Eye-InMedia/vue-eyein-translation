@@ -41,7 +41,7 @@ export default function viteEyeinTranslation(options = {}) {
              * @type {MagicString|null}
              */
             let src = null;
-            if (fileId.endsWith(`/_eTr.js`)) {
+            if (/\/_eTr\.js/.test(fileId)) {
                 src = new MagicString(code);
                 transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\.vue$/.test(fileId)) {
