@@ -23,4 +23,4 @@ export default defineNuxtPlugin(async nuxtApp => {
         nuxtApp.vueApp.use({install: vuePlugin.install}, {_eTr});
     });
 });
-                                                
+

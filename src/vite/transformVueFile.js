@@ -292,7 +292,7 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
                 translationFound = true;
 
                 if (!ctx.hmr) {
-                    localeTranslation[id].last_inline = localeInlineTranslation;
+                    translation.last_inline = localeInlineTranslation;
                 }
             }
 
