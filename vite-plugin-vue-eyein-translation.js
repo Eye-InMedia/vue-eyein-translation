@@ -44,7 +44,7 @@ export default function viteEyeinTranslation(options = {}) {
             if (/\/_eTr\.js/.test(fileId)) {
                 src = new MagicString(code);
                 transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
-            } else if (/\.vue$/.test(fileId)) {
+            } else if (/\.vue$/.test(fileId) && !fileId.includes(`/node_modules/`)) {
                 src = new MagicString(code);
                 transformVueFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
