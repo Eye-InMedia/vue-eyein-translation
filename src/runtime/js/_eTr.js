@@ -102,6 +102,10 @@ const _eTr = {
         return localeState.value;
     },
 
+    getDefaultLocale() {
+        return locales[0];
+    },
+
     setLocale(locale) {
         if (!translations.hasOwnProperty(locale)) {
             _eTr.loadLocale(locale)

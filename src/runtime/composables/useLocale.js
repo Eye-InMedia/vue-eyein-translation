@@ -27,6 +27,8 @@ export default function useLocale() {
                     return weightedLocale.split(`;`).shift();
                 });
             locale = _eTr.getNearestLocale(navigatorLocales);
+        } else {
+            locale = _eTr.getDefaultLocale();
         }
     } else {
         locale = _eTr.getNearestLocale(navigator.languages);
