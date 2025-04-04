@@ -191,11 +191,9 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
 }
 
 function transformScript(ctx, rootNode) {
-    const scriptNodeText = rootNode.outerHTML;
-
     let hasMatches = false;
 
-    let allMatches = scriptNodeText.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+    let allMatches = ctx.src.original.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
         const line = findLineNumber(matches.indices[3], ctx.src.original);
