@@ -54,7 +54,8 @@
         "vue",
         "vite",
         "i18n",
-        "translation"
+        "translation",
+        "nuxt"
     ],
     "engines": {
         "node": ">= 16"
