@@ -164,6 +164,11 @@ const _eTr = {
             return ``;
         }
 
+        // Should only happen in dev mode
+        if (result === null && value.hasOwnProperty(`inlineTranslations`) && value.inlineTranslations.hasOwnProperty(locale)) {
+            result = value.inlineTranslations[locale];
+        }
+
         if (result === null) {
             if (typeof value === `string`) {
                 return `Missing ${locale} translation for: ${value}`;

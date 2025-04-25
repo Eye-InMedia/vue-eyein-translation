@@ -365,6 +365,13 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
         translationObject.filters = filters
     }
 
+    if (ctx.hmr) {
+        translationObject.inlineTranslations = inlineTranslations.reduce((obj, inlineTranslation, index) => {
+            obj[inlineLocales[index]] = inlineTranslation;
+            return obj;
+        }, {});
+    }
+
     let json = JSON.stringify(translationObject)
         .replace(/'/g, `\\'`)
         .replace(/"/g, `'`);
