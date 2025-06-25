@@ -621,3 +621,6 @@ Ordinals: 1st 2nd 3rd 4th 103rd
 ```
 
 *Note: you can use Markdown*
+
+All Rights Reserved © Copyright Eye-In Media 2025
+[https://eye-in.com](https://eye-in.com)
