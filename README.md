@@ -15,6 +15,13 @@ Installation
 npm i vue-eyein-translation
 ```
 
+Command
+------------
+For scanning your project and generating the locales files, you can use the command:
+```sh
+npx cross-env SCAN_TRANSLATIONS=1 nuxi build
+```
+
 ### Add Vue plugin
 
 #### Vue 3
