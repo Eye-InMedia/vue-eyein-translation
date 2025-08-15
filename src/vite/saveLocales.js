@@ -94,7 +94,7 @@ export default function saveLocales(ctx, localesToSave = null) {
         if (fs.existsSync(localePath)) {
             const oldLocaleFileContent = JSON.parse(fs.readFileSync(localePath, {encoding: `utf8`}));
 
-            if (oldLocaleFileContent.$fingerprint === ordered.$fingerprint) {
+            if (oldLocaleFileContent.$fingerprint === ordered.$fingerprint && !ctx.options.skipSameFingerprint) {
                 if (ctx.options.debug) {
                     console.log(`[Eye-In Translation] Locale ${locale} fingerprint is the same.`);
                 }
