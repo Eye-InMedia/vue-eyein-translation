@@ -13,11 +13,7 @@ const hmrLocalesUpdate = debounce(ctx => {
     updatedLocales = new Set();
 }, 500);
 
-export default function transformVueFile(ctx) {
-    if (ctx.fileId.includes(`/node_modules/`) || ctx.fileId.includes(`/t.vue`) || ctx.fileId.includes(`/vue2T.vue`)) {
-        return false;
-    }
-
+function initializeContext(ctx) {
     ctx.relativePath = ctx.fileId.replace(rootDir, ``);
     ctx.currentFileTranslations = {};
 
@@ -26,6 +22,14 @@ export default function transformVueFile(ctx) {
             ctx.currentFileTranslations[locale] = {};
         }
     }
+}
+
+export default function transformVueFile(ctx) {
+    if (ctx.fileId.includes(`/node_modules/`) || ctx.fileId.includes(`/t.vue`) || ctx.fileId.includes(`/vue2T.vue`)) {
+        return false;
+    }
+
+    initializeContext(ctx);
 
     const root = parse(ctx.src.toString());
 
@@ -49,6 +53,54 @@ export default function transformVueFile(ctx) {
     }
 
     // console.log(ctx.fileId, ctx.src.toString());
+}
+
+export function transformScriptFile(ctx) {
+    if (ctx.fileId.includes(`/node_modules/`)) {
+        return false;
+    }
+
+    if (/\/_eTr\.js$/.test(ctx.fileId) || ctx.fileId.endsWith(`.d.ts`)) {
+        return false;
+    }
+
+    initializeContext(ctx);
+
+    const allMatches = ctx.src.original.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+
+    let hasMatches = false;
+
+    for (const matches of allMatches) {
+        const matchIndices = matches.indices?.[0];
+        if (!matchIndices) {
+            continue;
+        }
+
+        const thisStr = matches[1] || ``;
+        const computedStr = matches[2] || ``;
+        const srcStr = matches[3];
+        const line = findLineNumber(matches.indices[3], ctx.src.original);
+        const location = `JS template literal at (${ctx.relativePath}:${line})`;
+
+        let dataStr = ``;
+        if (matches.length > 4) {
+            dataStr = matches[4];
+        }
+
+        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
+
+        const translatorAccessor = thisStr ? `${thisStr}_eTr` : `${ensureHelperForScript(ctx)}()`;
+        const method = `tr${computedStr}`;
+
+        ctx.src.overwrite(matchIndices[0], matchIndices[1], `${translatorAccessor}.${method}(${translationObjectString})`);
+        hasMatches = true;
+    }
+
+    if (hasMatches && ctx.hmr) {
+        hmrLocalesUpdate(ctx);
+    }
+
+    return hasMatches;
 }
 
 function transformTemplate(ctx, rootNode) {
@@ -244,6 +296,31 @@ function injectTrComposable(ctx) {
     if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src.toString())) {
         ctx.src.appendRight(index, `\nconst _eTr = inject('_eTr');\n`);
     }
+}
+
+const SCRIPT_HELPER_IMPORT_ALIAS = `__eTrInject`;
+const SCRIPT_HELPER_NAME = `__eTrStaticResolver`;
+
+function ensureHelperForScript(ctx) {
+    if (ctx.__staticHelperName) {
+        return ctx.__staticHelperName;
+    }
+
+    const original = ctx.src.original;
+    const importInsertIndex = findPreambleIndex(original);
+    ctx.src.appendLeft(importInsertIndex, `import { inject as ${SCRIPT_HELPER_IMPORT_ALIAS} } from 'vue';\n`);
+
+    const helperStatement = `\nconst ${SCRIPT_HELPER_NAME} = () => {\n    const eTr = ${SCRIPT_HELPER_IMPORT_ALIAS}('_eTr');\n    if (!eTr) {\n        throw new Error('[Eye-In Translation] staticTr can only be used inside setup() or a composable. _eTr injection is missing.');\n    }\n    return eTr;\n};\n`;
+
+    const importsEndIndex = getEndOfImportsIndex(original);
+    if (importsEndIndex >= 0) {
+        ctx.src.appendLeft(importsEndIndex, helperStatement);
+    } else {
+        ctx.src.appendRight(importInsertIndex, helperStatement);
+    }
+
+    ctx.__staticHelperName = SCRIPT_HELPER_NAME;
+    return SCRIPT_HELPER_NAME;
 }
 
 function createTranslationObjectString(ctx, translationStr, location, dataStr = ``, filters = []) {
@@ -485,4 +562,28 @@ function addFileInlineTranslation(ctx, translationId, locale, translationObject,
     if (hasError) {
         console.error(errorMessage);
     }
+}
+
+function findPreambleIndex(code) {
+    let index = 0;
+
+    if (code.startsWith(`#!`)) {
+        const newlineIndex = code.indexOf(`\n`);
+        if (newlineIndex === -1) {
+            return code.length;
+        }
+        index = newlineIndex + 1;
+    }
+
+    const directiveRegex = /^\s*['"]use\s+\w+['"];?\s*/;
+    while (index < code.length) {
+        const slice = code.slice(index);
+        const match = directiveRegex.exec(slice);
+        if (!match) {
+            break;
+        }
+        index += match[0].length;
+    }
+
+    return index;
 }

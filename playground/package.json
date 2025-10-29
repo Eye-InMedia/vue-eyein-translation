@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "nuxi dev",
     "build": "nuxi build",
-    "generate": "nuxi generate"
+    "generate": "nuxi generate",
+    "scan-translations": "npx cross-env SCAN_TRANSLATIONS=1 nuxi build"
   },
   "dependencies": {
     "nuxt": "^3.14.1592"
