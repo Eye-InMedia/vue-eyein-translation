@@ -1,5 +1,5 @@
 import defaultOptions from "./src/defaultOptions.js";
-import transformVueFile from "./src/vite/transformVueFile.js";
+import transformVueFile, {transformScriptFile} from "./src/vite/transformVueFile.js";
 import transformLocaleFile from "./src/vite/transformLocaleFile.js";
 import saveLocales from "./src/vite/saveLocales.js";
 import loadLocales from "./src/vite/loadLocales.js";
@@ -153,6 +153,9 @@ export default function viteEyeinTranslation(options = {}) {
             } else if (/\.vue$/.test(fileId) && !fileId.includes(`/node_modules/`)) {
                 src = new MagicString(code);
                 transformVueFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
+            } else if (!fileId.includes(`/node_modules/`) && /\.(?:cjs|mjs|js|ts|jsx|tsx)$/i.test(fileId) && !fileId.endsWith(`.d.ts`)) {
+                src = new MagicString(code);
+                transformScriptFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
                 src = new MagicString(code);
                 transformLocaleFile({options, fileId, src, hmr, errors});
