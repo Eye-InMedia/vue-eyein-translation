@@ -35,6 +35,7 @@ export default function transformVueFile(ctx) {
 
     const root = parse(ctx.src.toString());
 
+    const scripts = [];
     for (const rootNode of root.childNodes) {
         if (!rootNode.tagName) {
             continue;
@@ -45,8 +46,14 @@ export default function transformVueFile(ctx) {
                 transformTemplate(ctx, rootNode);
                 break;
             case `SCRIPT`:
-                transformScript(ctx, rootNode);
+                scripts.push(transformScript(ctx, rootNode));
                 break;
+        }
+    }
+
+    if (ctx.templateHasTranslations) {
+        for (const {rootNode, ast, offset} of scripts) {
+            injectTrComposable(ctx, rootNode, ast || parseScriptBlock(rootNode), offset);
         }
     }
 
@@ -112,7 +119,9 @@ function transformBoundExpressions(ctx, node) {
         const ast = name.startsWith(`@`) || name.startsWith(`v-on:`)
             ? parseScript(expression, {sourceType: `module`, plugins: [`typescript`], allowReturnOutsideFunction: true})
             : parseExpression(expression, {plugins: [`typescript`]});
-        transformStaticCalls(ctx, ast, node.range[0] + match.indices[valueIndex][0]);
+        if (transformStaticCalls(ctx, ast, node.range[0] + match.indices[valueIndex][0])) {
+            ctx.templateHasTranslations = true;
+        }
     }
 }
 
@@ -134,7 +143,9 @@ function transformInterpolations(ctx, node) {
         if (!ast) {
             break;
         }
-        transformStaticCalls(ctx, ast, node.range[0] + start);
+        if (transformStaticCalls(ctx, ast, node.range[0] + start)) {
+            ctx.templateHasTranslations = true;
+        }
         cursor = end + 2;
     }
 }
@@ -310,18 +321,27 @@ function transformStaticCalls(ctx, ast, offset) {
 
 function transformScript(ctx, rootNode) {
     const offset = rootNode.range[0] + rootNode.outerHTML.indexOf(`>`) + 1;
-    const lang = rootNode.attributes.lang;
-    const ast = parseScript(rootNode.innerHTML, {
-        sourceType: `module`,
-        plugins: [...(lang === `ts` || lang === `tsx` ? [`typescript`] : []), ...(lang === `jsx` || lang === `tsx` ? [`jsx`] : [])]
-    });
+    if (!rootNode.innerHTML.includes(`staticTr`) && !ctx.templateHasTranslations) {
+        return {rootNode, ast: null, offset};
+    }
+    const ast = parseScriptBlock(rootNode);
     if (transformStaticCalls(ctx, ast, offset)) {
         injectTrComposable(ctx, rootNode, ast, offset);
     }
+    return {rootNode, ast, offset};
+}
+
+function parseScriptBlock(rootNode) {
+    const lang = rootNode.attributes.lang;
+    return parseScript(rootNode.innerHTML, {
+        sourceType: `module`,
+        plugins: [...(lang === `ts` || lang === `tsx` ? [`typescript`] : []), ...(lang === `jsx` || lang === `tsx` || rootNode.attributes.type === `text/jsx` ? [`jsx`] : [])]
+    });
 }
 
 function injectTrComposable(ctx, rootNode, ast, offset) {
-    if (!(`setup` in rootNode.attributes)) {
+    ctx.injectedScripts ||= new Set();
+    if (ctx.injectedScripts.has(offset) || !(`setup` in rootNode.attributes)) {
         return;
     }
 
@@ -364,6 +384,7 @@ function injectTrComposable(ctx, rootNode, ast, offset) {
     if (hasTranslationBinding) {
         return;
     }
+    ctx.injectedScripts.add(offset);
     const injection = `\nconst _eTr = ${injectName}('_eTr');\n`;
     if (imports.length > 0) {
         if (importText) {

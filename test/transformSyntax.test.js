@@ -130,8 +130,8 @@ describe(`template expression boundaries`, () => {
         expect(code).toContain(`_eTr.tr(`);
     });
 
-    it(`compiles calls in a template without injecting a script variable`, () => {
-        const {code} = transform(`<template>{{ staticTr('Hello') }}</template><script setup>\nconst x = 1;\n</script>`);
+    it(`uses the global template property with a normal script`, () => {
+        const {code} = transform(`<template>{{ staticTr('Hello') }}</template><script>\nconst x = 1;\n</script>`);
         expect(code).toContain(`_eTr.tr(`);
         expect(code).not.toContain(`const _eTr`);
         expectValidScripts(code);
@@ -204,5 +204,18 @@ describe(`internal components`, () => {
         const original = `<template><t>Hello</t></template>`;
         const fileId = fileURLToPath(new URL(`../src/runtime/components/${name}`, import.meta.url));
         expect(transform(original, fileId).code).toBe(original);
+    });
+});
+
+describe(`compatibility from website golden comparison`, () => {
+    it(`keeps the existing setup binding when translation calls occur only in the template`, () => {
+        const {code} = transform(`<template>{{ staticTr('Hello') }}</template><script setup>\nconst x = 1;\n</script>`);
+        expect(code).toContain(`const _eTr = inject('_eTr');`);
+        expectValidScripts(code);
+    });
+
+    it(`supports legacy JSX script type attributes`, () => {
+        const original = `<script type="text/jsx">\nexport default {render() { return <div onClick.prevent="" />; }};\n</script>`;
+        expect(transform(original).code).toBe(original);
     });
 });
