@@ -50,8 +50,9 @@ export function negotiateAcceptLanguage(header, locales) {
             let score = -1;
             if (range.tag === `*`) score = 0;
             else if (tag === range.tag || tag.startsWith(range.tag + `-`)) score = range.tag.split(`-`).length;
+            // Regional fallback ranks below every actual language range, including q=0.
             else if (range.quality > 0 && tag.split(`-`)[0] === range.tag.split(`-`)[0]
-                && !locales.some(l => l.toLowerCase() === range.tag || l.toLowerCase().startsWith(range.tag + `-`))) score = 1;
+                && !locales.some(l => l.toLowerCase() === range.tag || l.toLowerCase().startsWith(range.tag + `-`))) score = 0.5;
             if (score > specificity) {
                 selected = range;
                 specificity = score;

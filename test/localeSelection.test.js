@@ -1,4 +1,5 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
+import {negotiateAcceptLanguage} from "../src/runtime/js/localeSelection.js";
 import {runtimeSource} from "./helpers/runtimeSource.js";
 
 const locales = [`en-US`, `fi-FI`, `fil-PH`, `fr-CA`];
@@ -64,4 +65,8 @@ describe(`Accept-Language selection`, () => {
         expect(detectBrowserLocale(locales, environment)).toBe(`fr-CA`);
         expect(matchSupportedLocale(`@@fr`, locales)).toBeNull();
     });
+});
+
+it.each([`en-GB;q=1,en;q=0,fr;q=0.5`, `en;q=0,en-GB;q=1,fr;q=0.5`])(`constrains unsupported-region fallback by the explicit language exclusion: %s`, (header) => {
+    expect(negotiateAcceptLanguage(header, [`en-US`, `fr-CA`])).toBe(`fr-CA`);
 });
