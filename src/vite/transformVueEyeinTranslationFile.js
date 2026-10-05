@@ -49,8 +49,6 @@ export default function transformVueEyeinTranslationFile(ctx) {
     } else {
         ctx.src.replace(`/*{localeFilesPromisesImport}*/`, `localeFilesPromises = import.meta.glob(["/**/locales/**/*.locale"], {import: "default"});`);
     }
-
-    // console.log(ctx.fileId, ctx.src.toString());
 }
 
 function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {

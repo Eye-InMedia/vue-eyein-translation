@@ -2,8 +2,6 @@ import {parse} from "node-html-parser";
 import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
-const DEBUG_STATIC_REPLACEMENTS = process.env.EYEIN_TRANSLATION_DEBUG_STATIC === `1`;
-
 const rootDir = process.cwd().replace(/\\/g, `/`);
 
 let updatedLocales = new Set();
@@ -49,8 +47,6 @@ export default function transformVueFile(ctx) {
     if (ctx.hmr) {
         hmrLocalesUpdate(ctx);
     }
-
-    // console.log(ctx.fileId, ctx.src.toString());
 }
 
 function transformTemplate(ctx, rootNode) {
@@ -210,14 +206,7 @@ function transformScript(ctx, rootNode) {
         }
 
         const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        const replacement = `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`;
-
-        if (DEBUG_STATIC_REPLACEMENTS) {
-            const type = computedStr ? `staticTrComputed` : `staticTr`;
-            console.log(`[Eye-In Translation] ${type} replacement at ${ctx.relativePath}:${line} -> ${replacement}`);
-        }
-
-        ctx.src.replaceAll(fullMatch, replacement);
+        ctx.src.replaceAll(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
         hasMatches = true;
     }
 

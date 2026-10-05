@@ -1,6 +1,4 @@
 export default function transformLocaleFile(ctx) {
-    // console.log(`transformLocaleFile`, ctx.fileId);
-
     const json = JSON.parse(ctx.src.toString());
     let result = {};
     for (const key in json) {
@@ -26,6 +24,4 @@ export default function transformLocaleFile(ctx) {
     ctx.src.append(JSON.stringify(result));
     ctx.src.prepend(`const locale = `);
     ctx.src.append(`; export default locale;`);
-
-    // console.log(ctx.fileId, ctx.src.toString());
 }
