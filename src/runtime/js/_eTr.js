@@ -1,7 +1,7 @@
+import {computed, reactive, ref} from "vue";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
 import {applyFilter} from "./filters.js";
-import {computed, reactive, ref} from "vue";
 
 let localeFilesPromises = {};
 /*{localeFilesPromisesImport}*/
@@ -25,7 +25,7 @@ if (import.meta.hot) {
     /*{localesImportsOrder}*/
 
     // [] will be replaced by locales imports paths
-    import.meta.hot.accept([], modules => {
+    import.meta.hot.accept([], (modules) => {
         let i = 0;
         for (const module of modules) {
             const locale = localesImportsOrder[i];
@@ -188,7 +188,7 @@ const _eTr = {
         }
 
         // Replace double {{variable}} by single {variable}
-        result = result.replace(/\{\{(.+)}}/g, `{$1}`);
+        result = result.replace(/\{\{(.+)\}\}/g, `{$1}`);
 
         // Pluralization
         result = pluralize(result, data, locale);
@@ -275,6 +275,6 @@ const _eTr = {
 
         return locale;
     }
-}
+};
 
 export default _eTr;

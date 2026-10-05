@@ -2,22 +2,28 @@
     <main>
         <div class="container">
             <select v-model="locale">
-                <option value="en-US">English</option>
-                <option value="fr-CA">Français</option>
-                <option value="es-ES">Español</option>
+                <option value="en-US">
+                    English
+                </option>
+                <option value="fr-CA">
+                    Français
+                </option>
+                <option value="es-ES">
+                    Español
+                </option>
             </select>
 
             <h1>Attributes</h1>
-            <t-attributes></t-attributes>
+            <t-attributes />
 
             <h1>T Component</h1>
-            <t-component></t-component>
+            <t-component />
 
             <h1>Filters</h1>
-            <t-filters></t-filters>
+            <t-filters />
 
             <h1>Markdown</h1>
-            <t-markdown></t-markdown>
+            <t-markdown />
         </div>
     </main>
 </template>
@@ -27,6 +33,7 @@ import TFilters from "./components/tFilters.vue";
 import TAttributes from "./components/tAttributes.vue";
 import TComponent from "./components/tComponent.vue";
 import TMarkdown from "./components/tMarkdown.vue";
+
 const locale = useLocale();
 </script>
 

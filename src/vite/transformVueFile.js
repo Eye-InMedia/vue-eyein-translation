@@ -7,7 +7,7 @@ const STATIC_TR_CALL_REGEX = /(this\.)?staticTr(Computed)?\s*\(\s*([`'"])((?:\\.
 const rootDir = process.cwd().replace(/\\/g, `/`);
 
 let updatedLocales = new Set();
-const hmrLocalesUpdate = debounce(ctx => {
+const hmrLocalesUpdate = debounce((ctx) => {
     if (updatedLocales.size === 0) {
         return;
     }
@@ -37,11 +37,11 @@ export default function transformVueFile(ctx) {
         }
 
         switch (rootNode.tagName) {
-            case "TEMPLATE":
+            case `TEMPLATE`:
                 transformTemplate(ctx, rootNode);
                 break;
-            case "SCRIPT":
-                transformScript(ctx, rootNode);
+            case `SCRIPT`:
+                transformScript(ctx);
                 break;
         }
     }
@@ -172,7 +172,6 @@ function transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName) {
     }
 }
 
-
 function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
     const attributeName = srcAttributeName.replace(/\.t$/, ``);
 
@@ -190,7 +189,7 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
     }
 }
 
-function transformScript(ctx, rootNode) {
+function transformScript(ctx) {
     let hasMatches = false;
 
     let allMatches = ctx.src.original.matchAll(STATIC_TR_CALL_REGEX);
@@ -225,7 +224,7 @@ function injectTrComposable(ctx) {
     ctx.trInjected = true;
     const originalSrc = ctx.src.original;
 
-    if (!/import \{.*inject.*} from ['"]vue['"]/.test(ctx.src.toString())) {
+    if (!/import \{.*inject.*\} from ['"]vue['"]/.test(ctx.src.toString())) {
         ctx.src.replace(/(<script.*>)/, `$1\nimport {inject} from "vue"`);
     }
 
@@ -241,7 +240,7 @@ function injectTrComposable(ctx) {
         index = endOfImportsIndex;
     }
 
-    if (!/inject\([`'"]_eTr[`'"]\)/g.test(ctx.src.toString())) {
+    if (!/inject\([`'"]_eTr[`'"]\)/.test(ctx.src.toString())) {
         ctx.src.appendRight(index, `\nconst _eTr = inject('_eTr');\n`);
     }
 }
@@ -349,7 +348,8 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
     }
 
     if (!dataStr) {
-        let allDataBindingMatches = source.matchAll(/\{([\w.]+)(?:|[^}]+)*}/g);
+        // eslint-disable-next-line regexp/optimal-quantifier-concatenation -- [\w.]+ is greedy, the captured variable name is complete
+        let allDataBindingMatches = source.matchAll(/\{([\w.]+)[^}]*\}/g);
         let varList = new Set();
         for (const matches of allDataBindingMatches) {
             if (matches.length > 1) {
@@ -362,7 +362,7 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
     }
 
     if (filters.length > 0) {
-        translationObject.filters = filters
+        translationObject.filters = filters;
     }
 
     if (ctx.hmr) {
@@ -437,7 +437,6 @@ function parseInlineTranslationString(translationString) {
     return {id, groupId, fullId, context, comment, inlineTranslations, source};
 }
 
-
 function addFileInlineTranslation(ctx, translationId, locale, translationObject, localeTranslation, location) {
     translationObject.target = localeTranslation;
 
@@ -478,7 +477,7 @@ function addFileInlineTranslation(ctx, translationId, locale, translationObject,
     ctx.currentFileTranslations[locale][translationId].push({
         target: localeTranslation,
         location
-    })
+    });
 
     errorMessage += `If these translations are meant to be different, you should use the "context" syntax: String to translate||Another inline locale /@ short description/context destined to the translator @/\n`;
 

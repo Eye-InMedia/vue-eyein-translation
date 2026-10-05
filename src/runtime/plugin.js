@@ -1,10 +1,10 @@
-import {defineNuxtPlugin, useCookie} from '#app'
+import {watch} from "vue";
 import vuePlugin from "../../vue3.js";
 import _eTr from "./js/_eTr.js";
-import {watch} from "vue";
 import useLocale from "./composables/useLocale.js";
+import {defineNuxtPlugin, useCookie} from '#app';
 
-export default defineNuxtPlugin(async nuxtApp => {
+export default defineNuxtPlugin(async (nuxtApp) => {
     const locale = useLocale();
     const localeCookie = useCookie(`locale`, {secure: true, sameSite: true});
 
@@ -12,7 +12,7 @@ export default defineNuxtPlugin(async nuxtApp => {
         await _eTr.loadLocale(locale.value);
         _eTr.setLocale(locale.value);
 
-        watch(locale, async newLocale => {
+        watch(locale, async (newLocale) => {
             localeCookie.value = newLocale;
 
             await _eTr.loadLocale(newLocale);
@@ -23,4 +23,3 @@ export default defineNuxtPlugin(async nuxtApp => {
         nuxtApp.vueApp.use({install: vuePlugin.install}, {_eTr});
     });
 });
-

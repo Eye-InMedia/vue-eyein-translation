@@ -5,10 +5,16 @@
                 <t>**Translation** 1||**Traduction** 1</t>
             </li>
             <li>
-                <t class.1="red">__Translation__(1) 2||__Traduction__(1) 2</t>
+                <t class.1="red">
+                    __Translation__(1) 2||__Traduction__(1) 2
+                </t>
             </li>
             <li>
-                <t id.1="myId" class.1.2="highlighted" class.2="bordered">
+                <t
+                    id.1="myId"
+                    class.1.2="highlighted"
+                    class.2="bordered"
+                >
                     This *word*(1) must have class .highlighted and id #myId.
                     Another **words**(2) with __only__(2) the class .highlighted but different tags
                     ||
@@ -20,7 +26,9 @@
                 <t>_Hello {myVar}_||_Bonjour le {myVar}_</t>
             </li>
             <li>
-                <t :d="{renamedVar: myVar}">~~Hello {renamedVar}~~||~~Bonjour le {renamedVar}~~</t>
+                <t :d="{renamedVar: myVar}">
+                    ~~Hello {renamedVar}~~||~~Bonjour le {renamedVar}~~
+                </t>
             </li>
             <li>
                 <t>*Hello ***{world}****||*Bonjour le ***{world}**</t>
@@ -46,7 +54,6 @@ const myVar = ref(`world`);
 
 const world = staticTrComputed(`world||monde`);
 const notComputedWorld = staticTr(`world||monde`);
-
 </script>
 
 <style scoped>

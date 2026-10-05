@@ -1,6 +1,6 @@
-import path from "path";
-import fs from "fs";
-import crypto from "crypto";
+import path from "node:path";
+import fs from "node:fs";
+import crypto from "node:crypto";
 
 export default function saveLocales(ctx, localesToSave = null) {
     if (ctx.options.debug) {
@@ -36,7 +36,7 @@ export default function saveLocales(ctx, localesToSave = null) {
 
             if (ctx.options.autoTranslate.locales?.includes(locale) && ctx.options.autoTranslate.translationFunction) {
                 autoTranslateLocale(ctx, locale)
-                    .catch(e => {
+                    .catch((e) => {
                         console.error(e);
                     });
             }
@@ -59,7 +59,7 @@ export default function saveLocales(ctx, localesToSave = null) {
 
             purgeTranslationObject(ctx, localeTranslations[translationId]);
 
-            fingerprintArray.push(translationId + JSON.stringify(localeTranslations[translationId]))
+            fingerprintArray.push(translationId + JSON.stringify(localeTranslations[translationId]));
         }
 
         // Sort alphabetically locale object
@@ -89,7 +89,7 @@ export default function saveLocales(ctx, localesToSave = null) {
         });
 
         const ordered = Object.fromEntries(entries);
-        ordered.$fingerprint = crypto.createHash(`md5`).update(fingerprintArray.toSorted().join(`#`)).digest(`hex`)
+        ordered.$fingerprint = crypto.createHash(`md5`).update(fingerprintArray.toSorted().join(`#`)).digest(`hex`);
 
         if (fs.existsSync(localePath)) {
             const oldLocaleFileContent = JSON.parse(fs.readFileSync(localePath, {encoding: `utf8`}));
@@ -121,7 +121,7 @@ async function autoTranslateLocale(ctx, locale) {
             continue;
         }
 
-        if (!translations[locale][translationId].source) {
+        if (!ctx.translations[locale][translationId].source) {
             continue;
         }
 
@@ -129,9 +129,9 @@ async function autoTranslateLocale(ctx, locale) {
         let info = {
             id: translationId,
             data: {}
-        }
+        };
 
-        const matches = translationSource.match(/\{.+?}/g);
+        const matches = translationSource.match(/\{.+?\}/g);
         if (matches) {
             for (const [i, match] of matches.entries()) {
                 info.data[`{#${i}}`] = match;

@@ -1,6 +1,6 @@
 export function createTranslationId(str) {
     const cyrb64 = (str, seed = 0) => {
-        let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+        let h1 = 0xDEADBEEF ^ seed, h2 = 0x41C6CE57 ^ seed;
         for (let i = 0, ch; i < str.length; i++) {
             ch = str.charCodeAt(i);
             h1 = Math.imul(h1 ^ ch, 2654435761);
@@ -15,8 +15,8 @@ export function createTranslationId(str) {
 
     const cyrb64Hash = (str, seed = 0) => {
         const [h2, h1] = cyrb64(str, seed);
-        return h2.toString(36).padStart(7, '0') + h1.toString(36).padStart(7, '0');
-    }
+        return h2.toString(36).padStart(7, `0`) + h1.toString(36).padStart(7, `0`);
+    };
 
     return `zz` + cyrb64Hash(str);
 }
@@ -53,7 +53,7 @@ export function findLineNumber(indices, src) {
 }
 
 export function getEndOfImportsIndex(src) {
-    const allImportsMatches = [...src.matchAll(/^\s*import\s+.*$/gmd)];
+    const allImportsMatches = [...src.matchAll(/^\s*import\s+.*$/dgm)];
     if (!allImportsMatches || allImportsMatches.length === 0) {
         return -1;
     }

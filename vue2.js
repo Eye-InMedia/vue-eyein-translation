@@ -19,7 +19,7 @@ export default {
             throw new Error(`locales option cannot be empty`);
         }
         function compiledThrow() {
-            throw new Error(`Should never be called. Modified at compile time.`)
+            throw new Error(`Should never be called. Modified at compile time.`);
         }
 
         const eTr = options._eTr || _eTr;
@@ -44,4 +44,4 @@ export default {
 
         app.component(`t`, TComponent);
     }
-}
+};

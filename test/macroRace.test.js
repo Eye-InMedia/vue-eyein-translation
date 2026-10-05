@@ -1,10 +1,10 @@
-import {describe, it, expect, beforeAll, afterAll} from "vitest";
-import {build} from "vite";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import {fileURLToPath} from "node:url";
 import vue from "@vitejs/plugin-vue";
-import fs from "fs";
-import os from "os";
-import path from "path";
-import {fileURLToPath} from "url";
+import {build} from "vite";
+import {describe, it, expect, beforeAll, afterAll} from "vitest";
 import viteEyeinTranslation from "../vite-plugin-vue-eyein-translation.js";
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), `fixtures/macro-race`);

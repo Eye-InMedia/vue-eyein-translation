@@ -1,5 +1,5 @@
 export function getAllFilters() {
-    return [`upper`, `lower`, `capitalize`, `number`, `dateLong`, `date`, `th`]
+    return [`upper`, `lower`, `capitalize`, `number`, `dateLong`, `date`, `th`];
 }
 
 export function applyFilter(filter, value, locale, localeOptions) {

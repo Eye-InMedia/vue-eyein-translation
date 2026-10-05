@@ -7,4 +7,4 @@ export default {
     warnMissingTranslations: true,
     debug: false,
     autoTranslate: {}
-}
+};

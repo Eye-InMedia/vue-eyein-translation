@@ -1,10 +1,12 @@
+import {defineNuxtConfig} from "nuxt/config";
+
 export default defineNuxtConfig({
-    compatibilityDate: `2024-12-09`,
-    devtools: {enabled: true},
     modules: [`../src/module`],
+    devtools: {enabled: true},
+    compatibilityDate: `2024-12-09`,
     vueEyeinTranslation: {
         locales: [`en-US`, `fr-CA`],
         inlineLocales: `en-US||fr-CA`,
         debug: true
-    }
-})
+    },
+});

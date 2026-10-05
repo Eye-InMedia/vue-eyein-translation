@@ -1,5 +1,5 @@
 export default function pluralize(str, data, locale) {
-    let allPluralsMatches = str.matchAll(/\{([^{}]*?(?:\{(\w+)(?:\|\w+?)*?})+?[^{}]*?)}/g);
+    let allPluralsMatches = str.matchAll(/\{([^{}]*(?:\{(\w+)(?:\|\w+)*\})+[^{}]*)\}/g);
     for (const matches of allPluralsMatches) {
         if (!matches || matches.length < 3) {
             continue;
@@ -9,10 +9,10 @@ export default function pluralize(str, data, locale) {
         const key = matches[2];
 
         if (typeof data[key] !== `number`) {
-            throw new Error(`[Translation Error] ${key} is not a number.`);
+            throw new TypeError(`[Translation Error] ${key} is not a number.`);
         }
 
-        const choices = matches[1].replace(/\{([^|]*)\|([^|]*)}/g, `{$1[;;;]$2}`).split(`|`);
+        const choices = matches[1].replace(/\{([^|]*)\|([^|]*)\}/g, `{$1[;;;]$2}`).split(`|`);
         if (choices.length < 3) {
             throw new Error(`[Translation Error] Pluralization issue, there must be at least 3 choices for n = 0, n = 1 and n > 1.`);
         }
@@ -59,7 +59,7 @@ export default function pluralize(str, data, locale) {
             }
         }
 
-        str = str.replace(fullMatch, choice.replace(/\[;;;]/g, `|`));
+        str = str.replace(fullMatch, choice.replace(/\[;;;\]/g, `|`));
     }
 
     return str;

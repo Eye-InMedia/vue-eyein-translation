@@ -1,6 +1,6 @@
 import defaultOptions from "./src/defaultOptions.js";
 import TComponent from "./src/runtime/components/t.vue";
-import _eTr  from "./src/runtime/js/_eTr.js";
+import _eTr from "./src/runtime/js/_eTr.js";
 
 export default {
     async loadLocale(locale) {
@@ -20,7 +20,7 @@ export default {
         }
 
         function compiledThrow() {
-            throw new Error(`Should never be called. Modified at compile time.`)
+            throw new Error(`Should never be called. Modified at compile time.`);
         }
 
         const eTr = options._eTr || _eTr;
@@ -46,4 +46,4 @@ export default {
 
         app.component(`t`, TComponent);
     }
-}
+};

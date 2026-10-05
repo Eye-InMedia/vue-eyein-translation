@@ -1,5 +1,5 @@
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
 
 const rootDir = process.cwd();
 
@@ -58,8 +58,7 @@ function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, import
         importPath = `./` + importPath;
     }
 
-    const importName = importNamePrefix + fileToImportAbsolutePath.replace(rootDir, ``).replace(/[^a-zA-Z]/g, `_`);
+    const importName = importNamePrefix + fileToImportAbsolutePath.replace(rootDir, ``).replace(/[^a-z]/gi, `_`);
 
     return {importName, importPath};
 }
-

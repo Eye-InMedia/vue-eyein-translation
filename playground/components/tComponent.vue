@@ -8,7 +8,9 @@
                 <t>Hello {myVar}||Bonjour le {myVar}</t>
             </li>
             <li>
-                <t :d="{renamedVar: myVar}">Hello {renamedVar}||Bonjour le {renamedVar}</t>
+                <t :d="{renamedVar: myVar}">
+                    Hello {renamedVar}||Bonjour le {renamedVar}
+                </t>
             </li>
             <li>
                 <t>Hello {world}||Bonjour le {world}</t>

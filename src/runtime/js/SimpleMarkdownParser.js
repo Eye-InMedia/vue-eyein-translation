@@ -4,7 +4,7 @@ export default class SimpleMarkdownParser {
         this.attributes = attributes;
     }
 
-    #sanitizeHTML(options) {
+    #sanitizeHTML(_options) {
         this.str = this.str
             .replace(/&/g, `&amp;`)
             .replace(/</g, `&lt;`)
@@ -14,7 +14,7 @@ export default class SimpleMarkdownParser {
             .replace(/&lt;br&gt;/g, `<br>`);
     }
 
-    #renderEscapedCharacter(options) {
+    #renderEscapedCharacter(_options) {
         this.str = this.str
             .replace(/\\\*/g, `&ast;`)
             .replace(/\\\*/g, `&ast;`)
@@ -35,7 +35,7 @@ export default class SimpleMarkdownParser {
             .replace(/\^(.+?)\^/g, `<sup>$1</sup>`) // superscript / exponent
             .replace(/~(.+?)~/g, `<sub>$1</sub>`) // subscript
             .replace(/==(.+?)==/g, `<mark>$1</mark>`) // highlight
-            .replace(/\[(.+?)]\((.+?)\)/g, `<a href="$2" target="${options.linkTarget}">$1</a>`) // link
+            .replace(/\[(.+?)\]\((.+?)\)/g, `<a href="$2" target="${options.linkTarget}">$1</a>`); // link
 
         result = result.replace(/\/!\/\/!\//g, ``);
 

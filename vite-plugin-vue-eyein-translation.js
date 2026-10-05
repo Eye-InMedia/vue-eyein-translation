@@ -1,9 +1,9 @@
+import MagicString from "magic-string";
 import defaultOptions from "./src/defaultOptions.js";
 import transformVueFile from "./src/vite/transformVueFile.js";
 import transformLocaleFile from "./src/vite/transformLocaleFile.js";
 import saveLocales from "./src/vite/saveLocales.js";
 import loadLocales from "./src/vite/loadLocales.js";
-import MagicString from "magic-string";
 import transformVueEyeinTranslationFile from "./src/vite/transformVueEyeinTranslationFile.js";
 
 export default function viteEyeinTranslation(options = {}) {
@@ -31,7 +31,7 @@ export default function viteEyeinTranslation(options = {}) {
         buildEnd() {
             if (errors.length > 0) {
                 console.error(errors.map(e => e.stack).join(`\n`));
-                throw new AggregateError(errors);
+                throw new AggregateError(errors, `[Eye-In Translation] ${errors.length} error(s) found during build`);
             }
 
             saveLocales({options, translations, additionalTranslations, hmr});
@@ -67,12 +67,12 @@ export default function viteEyeinTranslation(options = {}) {
 
             return null;
         },
-        handleHotUpdate({file, server, modules, timestamp}) {
+        handleHotUpdate({file, modules}) {
             if (!/\.locale$/.test(file)) {
                 return null;
             }
 
             return modules;
         }
-    }
+    };
 }

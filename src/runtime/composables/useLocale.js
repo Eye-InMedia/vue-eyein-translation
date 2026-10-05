@@ -1,9 +1,9 @@
-import {useRequestHeaders, useCookie, useState} from '#app'
 import _eTr from "../js/_eTr.js";
+import {useRequestHeaders, useCookie, useState} from '#app';
 
 /**
  *
- * @returns {Ref<string>}
+ * @returns {Ref<string>} current locale
  */
 export default function useLocale() {
     const localeState = useState(`locale`);
@@ -18,12 +18,12 @@ export default function useLocale() {
     }
 
     let locale;
-    if (process.server) {
+    if (import.meta.server) {
         const headers = useRequestHeaders([`accept-language`]);
         if (headers[`accept-language`]) {
             const navigatorLocales = headers[`accept-language`]
                 .split(`,`)
-                .map(weightedLocale => {
+                .map((weightedLocale) => {
                     return weightedLocale.split(`;`).shift();
                 });
             locale = _eTr.getNearestLocale(navigatorLocales);

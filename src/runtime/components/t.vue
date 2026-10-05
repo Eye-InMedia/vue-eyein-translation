@@ -1,6 +1,9 @@
 <template>
     <template v-if="noHtml">{{ translation }}</template>
-    <span v-else v-html="htmlResult"></span>
+    <span
+        v-else
+        v-html="htmlResult"
+    />
 </template>
 
 <script>
@@ -14,13 +17,13 @@ const props = {
     d: {
         type: Object,
         default() {
-            return {}
+            return {};
         }
     },
     linkTarget: {
         type: String,
         default() {
-            return `_blank`
+            return `_blank`;
         }
     },
     noHtml: {
@@ -33,13 +36,13 @@ const filters = getAllFilters();
 for (const filter of filters) {
     props[filter] = {
         type: Boolean
-    }
+    };
 }
 
 export default {
     name: `t`,
-    props: props,
     inject: [`_eTr`],
+    props: props,
     computed: {
         translation() {
             if (!this.value) {
@@ -48,7 +51,7 @@ export default {
 
             let data = this.d;
             if (this.value.data) {
-                data = {...data, ...this.value.data}
+                data = {...data, ...this.value.data};
             }
 
             let result = this._eTr.tr(this.value, data);
@@ -64,10 +67,10 @@ export default {
         },
         htmlResult() {
             const markdownParser = new SimpleMarkdownParser(this.translation, this.$attrs);
-            return markdownParser.parse({linkTarget: this.linkTarget})
+            return markdownParser.parse({linkTarget: this.linkTarget});
         }
     }
-}
+};
 </script>
 
 <style scoped>
