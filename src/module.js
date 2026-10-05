@@ -13,9 +13,7 @@ export default defineNuxtModule({
         additionalLocalesDirs: [],
         nuxt: true
     },
-    setup(options, nuxt) {
-        nuxt.options.runtimeConfig.public.vueEyeinTranslation = JSON.parse(JSON.stringify(options));
-
+    setup(options) {
         const {resolve} = createResolver(import.meta.url);
 
         // Vite Plugin
