@@ -5,7 +5,9 @@ Vue Eye-In Translation
 
 Compatibility
 -------------
-Vue 2.7, Vue 3, Nuxt 3, Vite 5
+Vue 2.7, Vue 3, Nuxt 3 and 4, Vite 5 to 7, Node.js 16+
+
+TypeScript declarations are included for the Nuxt module options, the Vue plugins and the Vite plugin.
 
 
 
@@ -49,7 +51,7 @@ new Vue({
 }).$mount('#app');
 ```
 
-#### Nuxt 3
+#### Nuxt
 nuxt.config.js
 ```js
 export default defineNuxtConfig({
@@ -88,7 +90,7 @@ export default defineNuxtConfig({
 
 ### Add Vite plugin
 
-*Note: This step is not necessary for Nuxt 3*
+*Note: This step is not necessary for Nuxt*
 
 vite.config.js
 ```js
@@ -126,7 +128,18 @@ export default {
 };
 ```
 
-- All locale files will be in `/src/assets/locales` in **JSON** format
+| Option | Default | Description |
+|---|---|---|
+| `locales` | `["en-US"]` (Vite), `[]` (Nuxt) | Available locales, the first one is the default locale |
+| `inlineLocales` | `"en-US"` | Locales written inline in templates, separated by `\|\|` |
+| `assetsDir` | `"src/assets"` (Vite), `"assets"` (Nuxt) | Directory containing the `locales/` folder, relative to the Vite root (the Nuxt `srcDir`) |
+| `additionalLocalesDirs` | `[]` | Additional directories containing `<locale>.locale` files, for example shared between projects |
+| `purgeOldTranslations` | `true` | Delete unused translations from locale files at build time |
+| `warnMissingTranslations` | `true` | Warn at build time when a translation is missing |
+| `debug` | `false` | Log locale files loading and saving |
+| `autoTranslate` | `{}` | See [Auto translation](#auto-translation) |
+
+- Locale files are JSON files named `<locale>.locale`, stored in `<assetsDir>/locales/` (e.g. `src/assets/locales/en-US.locale`). They are updated at build time.
 
 ### Auto translation
 
@@ -621,6 +634,16 @@ Ordinals: 1st 2nd 3rd 4th 103rd
 ```
 
 *Note: you can use Markdown*
+
+Development
+-----------
+
+```sh
+npm run lint
+npm test          # unit and build tests, plus TypeScript declarations
+npm run build     # build dist/
+npm run release   # lint, test and build run automatically before publishing (prepublishOnly)
+```
 
 All Rights Reserved © Copyright Eye-In Media 2025
 [https://eye-in.com](https://eye-in.com)
