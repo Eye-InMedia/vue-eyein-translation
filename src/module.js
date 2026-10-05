@@ -4,7 +4,10 @@ import viteEyeinTranslation from "../vite-plugin-vue-eyein-translation.js";
 export default defineNuxtModule({
     meta: {
         name: `vue-eyein-translation`,
-        configKey: `vueEyeinTranslation`
+        configKey: `vueEyeinTranslation`,
+        compatibility: {
+            nuxt: `>=3.0.0`
+        }
     },
     defaults: {
         locales: [],
