@@ -98,7 +98,7 @@ export default function saveLocales(ctx, localesToSave = null) {
                 if (ctx.options.debug) {
                     console.log(`[Eye-In Translation] Locale ${locale} fingerprint is the same.`);
                 }
-                return;
+                continue;
             }
         }
 
