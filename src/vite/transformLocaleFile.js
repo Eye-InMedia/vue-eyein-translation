@@ -1,6 +1,6 @@
 export default function transformLocaleFile(ctx) {
     const json = JSON.parse(ctx.src.toString());
-    let result = {};
+    let result = Object.create(null);
     for (const key in json) {
         if (key === `$fingerprint`) {
             continue;
@@ -11,7 +11,7 @@ export default function transformLocaleFile(ctx) {
             continue;
         }
 
-        if (typeof json[key] === `string` || json[key].hasOwnProperty(`target`)) {
+        if (typeof json[key] === `string` || Object.prototype.hasOwnProperty.call(json[key], `target`)) {
             result[key] = typeof json[key] === `string` ? json[key] : json[key].target;
         } else {
             for (const translationId in json[key]) {
@@ -21,7 +21,8 @@ export default function transformLocaleFile(ctx) {
     }
 
     ctx.src.remove(0, ctx.src.toString().length);
-    ctx.src.append(JSON.stringify(result));
+    // A computed key preserves __proto__ as data in the generated JavaScript object.
+    ctx.src.append(JSON.stringify(result).replace(/"__proto__":/g, `["__proto__"]:`));
     ctx.src.prepend(`const locale = `);
     ctx.src.append(`; export default locale;`);
 }

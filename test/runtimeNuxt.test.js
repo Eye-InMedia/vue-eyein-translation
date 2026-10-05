@@ -21,6 +21,8 @@ describe(`production Nuxt runtime`, () => {
             french = await response.text();
             expect(french).toContain(`id="inline">Bonjour`);
             expect(french).toContain(`id="external">Bonjour externe`);
+            expect(french).toContain(`id="own-property">Bonjour externe`);
+            expect(french).toContain(`id="prototype">Bonjour externe`);
             expect(french).toContain(`id="attribute" title="Bonjour"`);
         } finally {
             await fixture.controlGate(`release`);
@@ -30,6 +32,8 @@ describe(`production Nuxt runtime`, () => {
         expect(response.status).toBe(200);
         expect(html).toContain(`id="inline">Hello`);
         expect(html).toContain(`id="external">Hello external`);
+        expect(html).toContain(`id="own-property">Hello external`);
+        expect(html).toContain(`id="prototype">Hello external`);
         expect(html).toContain(`id="computed">Hello`);
         expect(html).toContain(`id="plain">Hello`);
         expect(html).toContain(`id="attribute" title="Hello"`);

@@ -68,3 +68,12 @@ describe(`complete locale imports`, () => {
         await expect(runtime.loadLocale(`xx-invalid`)).rejects.toThrow(/locale/i);
     });
 });
+
+it(`loads custom hasOwnProperty IDs without breaking ordinary lookups or translation objects`, async () => {
+    const {runtime} = await runtimeSource({loaders: {[main]: async () => ({hasOwnProperty: `Propriété propre`, greeting: `Bonjour`})}});
+    await runtime.loadLocale(`fr-CA`);
+    expect(runtime.tr(`@@greeting`, null, `fr-CA`)).toBe(`Bonjour`);
+    expect(runtime.tr(`@@hasOwnProperty`, null, `fr-CA`)).toBe(`Propriété propre`);
+    expect(runtime.tr({"hasOwnProperty": `metadata`, "fr-CA": `Bonjour`}, null, `fr-CA`)).toBe(`Bonjour`);
+    expect(runtime.tr(Object.assign(Object.create(null), {"fr-CA": `Bonjour`}), null, `fr-CA`)).toBe(`Bonjour`);
+});

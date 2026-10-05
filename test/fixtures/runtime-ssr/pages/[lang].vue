@@ -2,6 +2,8 @@
     <main>
         <h1 id="inline">{{ inline }}</h1>
         <p id="external">{{ external }}</p>
+        <p id="own-property">{{ ownProperty }}</p>
+        <p id="prototype">{{ prototype }}</p>
         <p id="computed">{{ reactiveText }}</p>
         <p id="plain">{{ plain }}</p>
         <t id="component" :value="messages" />
@@ -15,6 +17,8 @@ const messages = {"en-US": "Hello", "fr-CA": "Bonjour"};
 const route = useRoute();
 const inline = staticTr(`Hello||Bonjour`);
 const external = staticTr(`@@greeting`);
+const ownProperty = staticTr(`@@hasOwnProperty`);
+const prototype = staticTr(`@@__proto__`);
 const reactiveText = trComputed(messages);
 const plain = tr(messages);
 if (import.meta.server && route.query.gate) await $fetch(`/api/gate?action=hold`);

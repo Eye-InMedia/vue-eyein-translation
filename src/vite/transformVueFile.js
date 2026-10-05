@@ -5,7 +5,11 @@ import {parse as parseScript, parseExpression} from "@babel/parser";
 import {createTranslationId, debounce, findLineNumber} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
+const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
+const setOwn = (object, key, value) => Object.defineProperty(object, key, {value, enumerable: true, configurable: true, writable: true});
+
 // Source entry points and the bundled Nuxt module resolve runtime files from different directories.
+
 const translationComponents = new Set([`../runtime`, `./runtime`].flatMap(directory =>
     [`t.vue`, `vue2T.vue`].map(name => fileURLToPath(new URL(`${directory}/components/${name}`, import.meta.url)).replace(/\\/g, `/`))
 ));
@@ -28,7 +32,7 @@ export default function transformVueFile(ctx) {
     ctx.currentFileTranslations = {};
 
     for (const locale of ctx.options.locales) {
-        if (!ctx.currentFileTranslations.hasOwnProperty(locale)) {
+        if (!owns(ctx.currentFileTranslations, locale)) {
             ctx.currentFileTranslations[locale] = {};
         }
     }
@@ -454,8 +458,8 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
     for (const locale of ctx.options.locales) {
         let translationFound = false;
 
-        if (groupId && !ctx.translations[locale].hasOwnProperty(groupId)) {
-            ctx.translations[locale][groupId] = {};
+        if (groupId && !owns(ctx.translations[locale], groupId)) {
+            setOwn(ctx.translations[locale], groupId, {});
         }
 
         const localeTranslation = groupId ? ctx.translations[locale][groupId] : ctx.translations[locale];
@@ -467,7 +471,7 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
             localeInlineTranslation = inlineTranslations[inlineLocaleIndex];
         }
 
-        if ((!localeTranslation || !localeTranslation.hasOwnProperty(id)) && (!localeAdditionalTranslation || !localeAdditionalTranslation.hasOwnProperty(id))) {
+        if ((!localeTranslation || !owns(localeTranslation, id)) && (!localeAdditionalTranslation || !owns(localeAdditionalTranslation, id))) {
             // if no translation found anywhere
             const translation = {
                 source: source,
@@ -486,13 +490,13 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
                 }
             }
 
-            localeTranslation[id] = translation;
+            setOwn(localeTranslation, id, translation);
 
             updatedLocales.add(locale);
         } else if (localeTranslation && typeof localeTranslation[id] === `string`) {
             // complete translation written as a plain string in the locale file, kept as is
             translationFound = true;
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(id) && (localeTranslation[id].target || localeInlineTranslation)) {
+        } else if (localeTranslation && owns(localeTranslation, id) && (localeTranslation[id].target || localeInlineTranslation)) {
             // if complete translation found
             translationFound = true;
 
@@ -510,10 +514,10 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
                     localeTranslation[id].last_inline = localeInlineTranslation;
                 }
             }
-        } else if (localeAdditionalTranslation && localeAdditionalTranslation.hasOwnProperty(id) && (typeof localeAdditionalTranslation[id] === `string` || localeAdditionalTranslation[id].target)) {
+        } else if (localeAdditionalTranslation && owns(localeAdditionalTranslation, id) && (typeof localeAdditionalTranslation[id] === `string` || localeAdditionalTranslation[id].target)) {
             // if complete additional translation found
             translationFound = true;
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(id)) {
+        } else if (localeTranslation && owns(localeTranslation, id)) {
             // translation incomplete found
             localeTranslation[id].found = true;
         }
@@ -523,7 +527,7 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
         }
 
         if (localeTranslation && typeof localeTranslation[id] === `object`) {
-            if (!localeTranslation[id].hasOwnProperty(`files`)) {
+            if (!owns(localeTranslation[id], `files`)) {
                 localeTranslation[id].files = {};
             }
 
@@ -640,12 +644,12 @@ function addFileInlineTranslation(ctx, translationId, locale, translationObject,
         return;
     }
 
-    if (!translationObject.hasOwnProperty(`files`)) {
+    if (!owns(translationObject, `files`)) {
         translationObject.files = {};
     }
 
-    if (!ctx.currentFileTranslations[locale].hasOwnProperty(translationId)) {
-        ctx.currentFileTranslations[locale][translationId] = [];
+    if (!owns(ctx.currentFileTranslations[locale], translationId)) {
+        setOwn(ctx.currentFileTranslations[locale], translationId, []);
     }
 
     let hasError = false;

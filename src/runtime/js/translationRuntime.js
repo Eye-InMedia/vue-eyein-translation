@@ -1,8 +1,17 @@
-import {computed, ref} from "vue";
+import {computed, ref, toRaw} from "vue";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
 import {applyFilter} from "./filters.js";
 import {nearestLocale, detectBrowserLocale} from "./localeSelection.js";
+
+// Track presence through Vue proxies while avoiding shadowed object methods.
+const owns = (object, key) => key in Object(object) && Object.prototype.hasOwnProperty.call(object, key);
+
+function translationEntry(dictionary, id) {
+    // Vue instruments this property as a method. Track its key without calling it.
+    if (id === `hasOwnProperty` && id in dictionary) return toRaw(dictionary)[id];
+    return dictionary[id];
+}
 
 export function createTranslationRuntime({locales, translations, loadLocale}, initialLocale = null) {
     const localeState = ref(initialLocale);
@@ -11,7 +20,7 @@ export function createTranslationRuntime({locales, translations, loadLocale}, in
         loadLocale,
 
         getLocaleOptions(locale) {
-            if (!translations.hasOwnProperty(locale)) {
+            if (!owns(translations, locale)) {
                 return {};
             }
             return Object.keys(translations[locale])
@@ -37,7 +46,7 @@ export function createTranslationRuntime({locales, translations, loadLocale}, in
         async changeLocale(locale) {
             const revision = ++changeRevision;
             if (!locales.includes(locale)) throw new Error(`Cannot select locale "${locale}"`);
-            if (!Object.prototype.hasOwnProperty.call(translations, locale)) await loadLocale(locale);
+            if (!owns(translations, locale)) await loadLocale(locale);
             if (revision === changeRevision) localeState.value = locale;
         },
 
@@ -68,22 +77,22 @@ export function createTranslationRuntime({locales, translations, loadLocale}, in
             const shortLocale = locale.split(`-`).shift();
 
             let result = null;
-            if (value.hasOwnProperty(locale)) {
+            if (owns(value, locale)) {
                 // exact matching locale inside translation object
                 result = value[locale];
-            } else if (value.hasOwnProperty(shortLocale)) {
+            } else if (owns(value, shortLocale)) {
                 // partial matching locale inside translation object (ex: fr-CA matches fr translation)
                 result = value[shortLocale];
             } else if (value.id) {
-                if (translations.hasOwnProperty(locale) && translations[locale].hasOwnProperty(value.id) && translations[locale][value.id]) {
+                if (owns(translations, locale) && owns(translations[locale], value.id) && translationEntry(translations[locale], value.id)) {
                     // exact matching locale using external locale file
-                    result = translations[locale][value.id];
+                    result = translationEntry(translations[locale], value.id);
                 } else {
                     const similarLocale = locales.find(l => l.startsWith(shortLocale));
 
-                    if (similarLocale && translations.hasOwnProperty(similarLocale) && translations[similarLocale].hasOwnProperty(value.id) && translations[similarLocale][value.id]) {
+                    if (similarLocale && owns(translations, similarLocale) && owns(translations[similarLocale], value.id) && translationEntry(translations[similarLocale], value.id)) {
                         // partial matching locale using external locale file(ex: fr-CA matches fr translation)
-                        result = translations[similarLocale][value.id];
+                        result = translationEntry(translations[similarLocale], value.id);
                     }
                 }
             }
@@ -93,14 +102,14 @@ export function createTranslationRuntime({locales, translations, loadLocale}, in
             }
 
             // Should only happen in dev mode
-            if (result === null && value.hasOwnProperty(`inlineTranslations`) && value.inlineTranslations.hasOwnProperty(locale)) {
+            if (result === null && owns(value, `inlineTranslations`) && owns(value.inlineTranslations, locale)) {
                 result = value.inlineTranslations[locale];
             }
 
             if (result === null) {
                 if (typeof value === `string`) {
                     return `Missing ${locale} translation for: ${value}`;
-                } else if (typeof value === `object` && value.hasOwnProperty(`en-US`) && value[`en-US`]) {
+                } else if (typeof value === `object` && owns(value, `en-US`) && value[`en-US`]) {
                     return `Missing ${locale} translation for: ${value[`en-US`]}`;
                 } else if (value.id) {
                     return `Missing ${locale} translation for @@${value.id}`;

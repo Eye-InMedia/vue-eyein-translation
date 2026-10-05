@@ -1,7 +1,8 @@
 import {afterEach, describe, expect, it, vi} from "vitest";
-import {createSSRApp, h, inject, resolveDirective, resolveComponent, withDirectives} from "vue";
+import {createSSRApp, h, inject, resolveDirective, resolveComponent, withDirectives, reactive} from "vue";
 import {renderToString} from "vue/server-renderer";
 import vue3Plugin from "../vue3.js";
+import {createTranslationRuntime} from "../src/runtime/js/translationRuntime.js";
 import {runtimeSource, deferred} from "./helpers/runtimeSource.js";
 
 const messages = {"en-US": `Hello`, "fr-CA": `Bonjour`, "fil-PH": `Kumusta`};
@@ -80,4 +81,24 @@ describe(`request-local translation runtimes`, () => {
         expect(runtime.getLocale()).toBe(`en-US`);
         expect(report).toHaveBeenCalledOnce();
     });
+});
+
+it(`tracks reactive updates of a custom hasOwnProperty translation`, async () => {
+    const translations = reactive({"en-US": {hasOwnProperty: `Own property`, greeting: `Hello`}});
+    const runtime = createTranslationRuntime({locales: [`en-US`], translations, loadLocale: async () => {}});
+    await runtime.changeLocale(`en-US`);
+    const value = runtime.trComputed(`@@hasOwnProperty`);
+    expect(value.value).toBe(`Own property`);
+    translations[`en-US`].hasOwnProperty = `Updated property`;
+    expect(value.value).toBe(`Updated property`);
+});
+
+it(`reacts when a requested locale is added to a translation object`, async () => {
+    const {runtime} = await runtimeSource({loaders: {'/assets/locales/en-US.locale': async () => ({})}});
+    await runtime.changeLocale(`en-US`);
+    const messages = reactive({"en-US": `Hello`});
+    const translated = runtime.trComputed(messages, null, `fr-CA`);
+    expect(translated.value).toContain(`Missing`);
+    messages[`fr-CA`] = `Bonjour`;
+    expect(translated.value).toBe(`Bonjour`);
 });

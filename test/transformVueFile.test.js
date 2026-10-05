@@ -41,3 +41,22 @@ describe(`transformVueFile with translations stored as plain strings`, () => {
         expect(translations).toEqual({"en-US": {myid: `Hi`}, "fr-CA": {myid: `Salut`}});
     });
 });
+
+it(`compiles ordinary and hasOwnProperty IDs together without mutating string entries`, () => {
+    const translations = {"en-US": {hasOwnProperty: `Own property`, greeting: `Hello`}, "fr-CA": {hasOwnProperty: `Propriété propre`, greeting: `Bonjour`}};
+    const code = transform(`<script setup>const a = staticTr("@@greeting"); const b = staticTr("@@hasOwnProperty");</script>`, translations);
+    expect(code).not.toContain(`staticTr(`);
+    expect(code).toContain(`'id':'greeting'`);
+    expect(code).toContain(`'id':'hasOwnProperty'`);
+    expect(translations[`en-US`]).toEqual({hasOwnProperty: `Own property`, greeting: `Hello`});
+});
+
+it.each([`__proto__`, `__proto__.greeting`])(`creates own catalog entries for prototype-like ID %s`, (id) => {
+    const translations = {"en-US": {}, "fr-CA": {}};
+    transform(`<script setup>const text = staticTr("Hello||Bonjour@@${id}");</script>`, translations);
+    const [group, child] = id.split(`.`);
+    const english = JSON.parse(JSON.stringify(translations[`en-US`]));
+    expect(Object.prototype.hasOwnProperty.call(english, group)).toBe(true);
+    expect(child ? english[group][child].target : english[group].target).toBe(`Hello`);
+    expect(Object.getPrototypeOf(translations[`en-US`])).toBe(Object.prototype);
+});

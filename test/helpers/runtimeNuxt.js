@@ -18,7 +18,7 @@ export async function startRuntimeNuxtFixture({pages = true, dependencyRoot = ro
         fs.symlinkSync(path.join(dependencyRoot, `node_modules`), path.join(dir, `node_modules`));
         fs.mkdirSync(path.join(dir, `assets/locales`), {recursive: true});
         for (const [locale, greeting] of [[`en-US`, `Hello external`], [`fr-CA`, `Bonjour externe`]]) {
-            fs.writeFileSync(path.join(dir, `assets/locales/${locale}.locale`), JSON.stringify({greeting}));
+            fs.writeFileSync(path.join(dir, `assets/locales/${locale}.locale`), JSON.stringify(Object.fromEntries([[`greeting`, greeting], [`hasOwnProperty`, greeting], [`__proto__`, greeting]])));
         }
         // Populate compiler-generated entries before Nuxt consumes the client locale modules.
         // This fixture models a project with its already generated translation files.
