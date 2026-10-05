@@ -186,21 +186,8 @@ function transformTranslationVTColonAttribute(ctx, rootNode, srcAttributeName) {
     const datStr = rootNode.attributes[srcAttributeName];
     const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location, datStr, filters) : null;
 
-    const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
-    let matches = rootNode.outerHTML.match(attributeRegex);
-    if (matches && matches.length >= 1) {
-        const start = rootNode.range[0] + matches.indices[0][0];
-        const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
-    }
-
-    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)"))?`, `ds`);
-    matches = rootNode.outerHTML.match(directiveRegex);
-    if (matches && matches.length >= 1) {
-        const start = rootNode.range[0] + matches.indices[0][0];
-        const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.remove(start, end);
-    }
+    replaceTranslationAttribute(ctx, rootNode, attributeName, attributeName, translationObjectString);
+    removeTranslationDirective(ctx, rootNode, srcAttributeName);
 }
 
 function transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName) {
@@ -219,22 +206,9 @@ function transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName) {
         const datStr = rootNode.attributes[srcAttributeName];
         const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location, datStr) : null;
 
-        const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
-        let matches = rootNode.outerHTML.match(attributeRegex);
-        if (matches && matches.length >= 1) {
-            const start = rootNode.range[0] + matches.indices[0][0];
-            const end = rootNode.range[0] + matches.indices[0][1];
-            ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
-        }
+        replaceTranslationAttribute(ctx, rootNode, attributeName, attributeName, translationObjectString);
     }
-
-    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)"))?`, `ds`);
-    const matches = rootNode.outerHTML.match(directiveRegex);
-    if (matches && matches.length >= 1) {
-        const start = rootNode.range[0] + matches.indices[0][0];
-        const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.remove(start, end);
-    }
+    removeTranslationDirective(ctx, rootNode, srcAttributeName);
 }
 
 function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
@@ -245,12 +219,23 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
     const translationStr = rootNode.attributes[srcAttributeName];
     const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location) : null;
 
-    const attributeRegex = new RegExp(`\\s+${srcAttributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
-    let matches = rootNode.outerHTML.match(attributeRegex);
-    if (matches && matches.length >= 1) {
-        const start = rootNode.range[0] + matches.indices[0][0];
-        const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
+    replaceTranslationAttribute(ctx, rootNode, srcAttributeName, attributeName, translationObjectString);
+}
+
+function replaceTranslationAttribute(ctx, node, sourceName, targetName, translationObjectString) {
+    const match = templateAttributes(node).find(attribute => attribute[1] === sourceName);
+    if (!match) {
+        return;
+    }
+    const [start, end] = match.indices[0];
+    const replacement = translationObjectString ? ` :${targetName}="_eTr.tr(${translationObjectString})"` : ` ${targetName}=""`;
+    ctx.src.overwrite(node.range[0] + start, node.range[0] + end, replacement);
+}
+
+function removeTranslationDirective(ctx, node, name) {
+    const match = templateAttributes(node).find(attribute => attribute[1] === name);
+    if (match) {
+        ctx.src.remove(node.range[0] + match.indices[0][0], node.range[0] + match.indices[0][1]);
     }
 }
 

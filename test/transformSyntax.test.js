@@ -161,3 +161,32 @@ describe(`translated attribute values`, () => {
         expect(translations[`en-US`]).toEqual({});
     });
 });
+
+describe(`opening tag attribute ranges`, () => {
+    it(`does not match a child's attribute when the parent has a boolean attribute`, () => {
+        const {code} = transform(`<template><div alt v-t:alt><img alt="Child" /></div></template>`);
+        expect(code).toContain(`<div alt="">`);
+        expect(code).toContain(`<img alt="Child" />`);
+    });
+
+    it(`matches alt.t exactly beside altXt`, () => {
+        const {code} = transform(`<template><img altXt="Keep" alt.t="Translate" /></template>`);
+        expect(code).toContain(`altXt="Keep"`);
+        expect(code).not.toContain(`alt.t=`);
+        expect(code).toContain(`:alt="_eTr.tr(`);
+    });
+
+    it(`matches directives exactly beside a similarly named attribute`, () => {
+        const {code} = transform(`<template><img alt="Translate" v-tXalt="Keep" v-t.alt /></template>`);
+        expect(code).toContain(`v-tXalt="Keep"`);
+        expect(code).not.toContain(`v-t.alt`);
+        expect(code).toContain(`:alt="_eTr.tr(`);
+    });
+
+    it(`accepts spaces around the equals sign and > inside a value`, () => {
+        const {code} = transform(`<template><img title="x > y" alt.t = 'Translate' /></template>`);
+        expect(code).toContain(`title="x > y"`);
+        expect(code).toContain(`:alt="_eTr.tr(`);
+        expect(code).not.toContain(`alt.t`);
+    });
+});
