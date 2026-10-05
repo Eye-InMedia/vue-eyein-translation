@@ -14,6 +14,7 @@ let additionalLocalesDirs = [];
 let locales = [`en-US`];
 /*{locales}*/
 
+let localeModules = [];
 let translations = reactive({});
 /*{translations}*/
 
@@ -23,16 +24,12 @@ if (import.meta.hot) {
 
     // [] will be replaced by locales imports paths
     import.meta.hot.accept([], (modules) => {
-        let i = 0;
-        for (const module of modules) {
-            const locale = localesImportsOrder[i];
-            i++;
-            if (!module) {
-                continue;
-            }
-            for (const key in module.default) {
-                translations[locale][key] = module.default[key];
-            }
+        modules.forEach((module, index) => {
+            if (module) localeModules[index] = module.default;
+        });
+        for (const locale of new Set(localesImportsOrder)) {
+            const dictionaries = localeModules.filter((_, index) => localesImportsOrder[index] === locale);
+            translations[locale] = dictionaries.reduce((merged, dictionary) => ({...merged, ...dictionary}), {});
         }
     });
 }

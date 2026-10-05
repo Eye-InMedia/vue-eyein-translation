@@ -15,29 +15,20 @@ export default function transformVueEyeinTranslationFile(ctx) {
         let importsCode = ``;
         let code = ``;
         for (const locale of ctx.options.locales) {
-            const localeAbsolutePath = path.join(ctx.rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`);
-            const localeLowercase = locale.replace(/-/g, ``).toLowerCase();
-            const {importName, importPath} = getImportPath(ctx.rootDir, ctx.fileId, localeAbsolutePath, localeLowercase);
-
-            importsPaths.push(importPath);
-            importsLocale.push(locale);
-
-            importsCode += `import ${importName} from "${importPath}";\n`;
-            code += `translations["${locale}"] = reactive(${importName});\n`;
-
-            for (const additionalDir of ctx.options.additionalLocalesDirs) {
-                const additionalLocaleAbsolutePath = path.join(ctx.rootDir, additionalDir, `${locale}.locale`);
-
-                if (fs.existsSync(additionalLocaleAbsolutePath)) {
-                    const {importName, importPath} = getImportPath(ctx.rootDir, ctx.fileId, additionalLocaleAbsolutePath, localeLowercase);
-
-                    importsPaths.push(importPath);
-                    importsLocale.push(locale);
-
-                    importsCode += `import ${importName} from "${importPath}";\n`;
-                    code += `translations["${locale}"] = reactive({...${importName}, ...translations["${locale}"]})\n`;
-                }
+            const files = ctx.options.additionalLocalesDirs
+                .map(directory => path.join(ctx.rootDir, directory, `${locale}.locale`))
+                .filter(file => fs.existsSync(file));
+            files.push(path.join(ctx.rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`));
+            const names = [];
+            for (const file of files) {
+                const {importName, importPath} = getImportPath(ctx.rootDir, ctx.fileId, file, locale.replace(/-/g, ``).toLowerCase());
+                importsPaths.push(importPath);
+                importsLocale.push(locale);
+                importsCode += `import ${importName} from "${importPath}";\n`;
+                names.push(importName);
+                code += `localeModules.push(${importName});\n`;
             }
+            code += `translations["${locale}"] = {...${names.join(`, ...`)}};\n`;
         }
 
         ctx.src.prepend(importsCode);

@@ -4,14 +4,15 @@ import MagicString from "magic-string";
 
 // Evaluate the runtime's real module body with controlled build placeholders.
 // Dependencies remain real; only the Vite-generated import map/environment vary.
-export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {}, assetsDir = `assets`, additionalLocalesDirs = [], hot} = {}) {
+export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {}, assetsDir = `assets`, additionalLocalesDirs = [], hot, source: inputSource, imports = {}} = {}) {
     const url = new URL(`../../src/runtime/js/_eTr.js`, import.meta.url);
-    const source = fs.readFileSync(url, `utf8`);
+    const source = inputSource ?? fs.readFileSync(url, `utf8`);
     const code = new MagicString(source);
     const names = [], values = [];
     for (const node of parse(source, {sourceType: `module`}).program.body) {
         if (node.type === `ImportDeclaration`) {
-            const dependency = await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
+            const resolved = node.source.value.startsWith(`.`) ? new URL(node.source.value, url).pathname : node.source.value;
+            const dependency = imports[resolved] ?? await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
             for (const specifier of node.specifiers) {
                 names.push(specifier.local.name);
                 values.push(specifier.type === `ImportDefaultSpecifier` ? dependency.default : dependency[specifier.imported.name]);
