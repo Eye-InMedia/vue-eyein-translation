@@ -136,3 +136,28 @@ describe(`template expression boundaries`, () => {
         expectValidScripts(code);
     });
 });
+
+describe(`translated attribute values`, () => {
+    it.each([
+        `<template><img alt.t="Hello\n    World" /></template>`,
+        `<template><img alt="Hello\n    World" v-t:alt="{name:\n    user.name}" /></template>`,
+        `<template><img alt="Hello\n    World" v-t.alt="{name:\n    user.name}" /></template>`
+    ])(`compiles multiline values: %s`, (original) => {
+        const {code} = transform(original);
+        expect(code).toContain(`:alt="_eTr.tr(`);
+        expect(code).not.toContain(`v-t`);
+        expect(code).not.toContain(`alt.t=`);
+    });
+
+    it.each([
+        `<template><img alt.t="" /></template>`,
+        `<template><img alt="" v-t:alt="" /></template>`,
+        `<template><img alt="" v-t.alt="" /></template>`
+    ])(`keeps an empty translated attribute empty: %s`, (original) => {
+        const {code, translations} = transform(original);
+        expect(code).toContain(`alt=""`);
+        expect(code).not.toContain(`v-t`);
+        expect(code).not.toContain(`alt.t=`);
+        expect(translations[`en-US`]).toEqual({});
+    });
+});

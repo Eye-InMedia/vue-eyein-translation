@@ -184,17 +184,17 @@ function transformTranslationVTColonAttribute(ctx, rootNode, srcAttributeName) {
     const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
     const translationStr = rootNode.attributes[attributeName];
     const datStr = rootNode.attributes[srcAttributeName];
-    const translationObjectString = createTranslationObjectString(ctx, translationStr, location, datStr, filters);
+    const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location, datStr, filters) : null;
 
-    const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+    const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
     let matches = rootNode.outerHTML.match(attributeRegex);
     if (matches && matches.length >= 1) {
         const start = rootNode.range[0] + matches.indices[0][0];
         const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+        ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
     }
 
-    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)"))?`, `d`);
+    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)"))?`, `ds`);
     matches = rootNode.outerHTML.match(directiveRegex);
     if (matches && matches.length >= 1) {
         const start = rootNode.range[0] + matches.indices[0][0];
@@ -217,18 +217,18 @@ function transformTranslationVTDotAttributes(ctx, rootNode, srcAttributeName) {
         const translationStr = rootNode.attributes[attributeName];
         const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
         const datStr = rootNode.attributes[srcAttributeName];
-        const translationObjectString = createTranslationObjectString(ctx, translationStr, location, datStr);
+        const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location, datStr) : null;
 
-        const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+        const attributeRegex = new RegExp(`\\s+${attributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
         let matches = rootNode.outerHTML.match(attributeRegex);
         if (matches && matches.length >= 1) {
             const start = rootNode.range[0] + matches.indices[0][0];
             const end = rootNode.range[0] + matches.indices[0][1];
-            ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+            ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
         }
     }
 
-    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)"))?`, `d`);
+    const directiveRegex = new RegExp(`\\s+${srcAttributeName}(?:=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)"))?`, `ds`);
     const matches = rootNode.outerHTML.match(directiveRegex);
     if (matches && matches.length >= 1) {
         const start = rootNode.range[0] + matches.indices[0][0];
@@ -243,14 +243,14 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
     const line = findLineNumber(rootNode.range, ctx.src.original);
     const location = `${attributeName} of <${rootNode.tagName.toLowerCase()}> at (${ctx.relativePath}:${line})`;
     const translationStr = rootNode.attributes[srcAttributeName];
-    const translationObjectString = createTranslationObjectString(ctx, translationStr, location);
+    const translationObjectString = translationStr ? createTranslationObjectString(ctx, translationStr, location) : null;
 
-    const attributeRegex = new RegExp(`\\s+${srcAttributeName}=(?:'.+?(?<!\\\\)'|".+?(?<!\\\\)")`, `d`);
+    const attributeRegex = new RegExp(`\\s+${srcAttributeName}=(?:'.*?(?<!\\\\)'|".*?(?<!\\\\)")`, `ds`);
     let matches = rootNode.outerHTML.match(attributeRegex);
     if (matches && matches.length >= 1) {
         const start = rootNode.range[0] + matches.indices[0][0];
         const end = rootNode.range[0] + matches.indices[0][1];
-        ctx.src.overwrite(start, end, ` :${attributeName}="_eTr.tr(${translationObjectString})"`);
+        ctx.src.overwrite(start, end, translationObjectString ? ` :${attributeName}="_eTr.tr(${translationObjectString})"` : ` ${attributeName}=""`);
     }
 }
 
