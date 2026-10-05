@@ -2,6 +2,8 @@ import {parse} from "node-html-parser";
 import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
+const STATIC_TR_CALL_REGEX = /(this\.)?staticTr(Computed)?\s*\(\s*([`'"])((?:\\.|(?!\3)[\s\S])+?)\3\s*(?:,\s*([\s\S]*?\S[\s\S]*?))?\s*,?\s*\)/dg;
+
 const rootDir = process.cwd().replace(/\\/g, `/`);
 
 let updatedLocales = new Set();
@@ -191,18 +193,18 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
 function transformScript(ctx, rootNode) {
     let hasMatches = false;
 
-    let allMatches = ctx.src.original.matchAll(/(this\.)?staticTr(Computed)?\([`'"](.+?)[`'"](?:, (.+?))?\)/dg);
+    let allMatches = ctx.src.original.matchAll(STATIC_TR_CALL_REGEX);
     for (const matches of allMatches) {
         const fullMatch = matches[0];
-        const line = findLineNumber(matches.indices[3], ctx.src.original);
+        const line = findLineNumber(matches.indices[4], ctx.src.original);
         const thisStr = matches[1] || ``;
         const computedStr = matches[2] || ``;
-        const srcStr = matches[3];
+        const srcStr = matches[4];
         const location = `JS template literal at (${ctx.relativePath}:${line})`;
 
         let dataStr = ``;
-        if (matches.length > 4) {
-            dataStr = matches[4];
+        if (matches[5]) {
+            dataStr = matches[5].trim();
         }
 
         const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
