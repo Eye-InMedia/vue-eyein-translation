@@ -188,7 +188,7 @@ const _eTr = {
         }
 
         // Replace double {{variable}} by single {variable}
-        result = result.replace(/\{\{(.+)\}\}/g, `{$1}`);
+        result = result.replace(/\{\{(.+?)\}\}/g, `{$1}`);
 
         // Pluralization
         result = pluralize(result, data, locale);
