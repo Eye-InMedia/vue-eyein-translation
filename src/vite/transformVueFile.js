@@ -71,6 +71,7 @@ function transformTemplate(ctx, rootNode) {
     }
 
     if (rootNode.tagName === `T`) {
+        transformBoundExpressions(ctx, rootNode);
         transformTranslationComponents(ctx, rootNode);
         return;
     } else {
@@ -105,22 +106,53 @@ function templateAttributes(node) {
     return [...openingTag(node).matchAll(/\s+([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/dg)];
 }
 
+function decodeTemplateExpression(expression) {
+    // Let the HTML parser use the same entity decoding as attributes, without parsing JS `<` as a tag.
+    return parse(`<x value="${expression.replaceAll(`"`, `&quot;`)}" />`).firstChild.getAttribute(`value`);
+}
+
+function encodeTemplateExpression(expression, quote = `"`) {
+    const escaped = expression.replaceAll(`&`, `&amp;`).replaceAll(`<`, `&lt;`);
+    return quote === `'` ? escaped.replaceAll(`'`, `&#39;`) : escaped.replaceAll(`"`, `&quot;`);
+}
+
 function transformBoundExpressions(ctx, node) {
     for (const match of templateAttributes(node)) {
         const name = match[1];
-        if (!(name.startsWith(`:`) || name.startsWith(`@`) || name.startsWith(`v-`)) || name.startsWith(`v-t`)) {
+        if (!(name.startsWith(`:`) || name.startsWith(`@`) || name.startsWith(`#`) || name.startsWith(`v-`)) || name === `v-t` || name.startsWith(`v-t:`) || name.startsWith(`v-t.`)) {
             continue;
         }
         const valueIndex = match[2] !== undefined ? 2 : match[3] !== undefined ? 3 : 4;
-        const expression = match[valueIndex];
-        if (!expression?.includes(`staticTr`)) {
+        const raw = match[valueIndex];
+        if (!raw?.includes(`staticTr`)) {
             continue;
         }
-        const ast = name.startsWith(`@`) || name.startsWith(`v-on:`)
-            ? parseScript(expression, {sourceType: `module`, plugins: [`typescript`], allowReturnOutsideFunction: true})
-            : parseExpression(expression, {plugins: [`typescript`]});
-        if (transformStaticCalls(ctx, ast, node.range[0] + match.indices[valueIndex][0])) {
+        const expression = decodeTemplateExpression(raw);
+        const source = new MagicString(expression);
+        const [start, end] = match.indices[valueIndex];
+        const fileOffset = node.range[0] + start;
+        const parserOptions = {plugins: [`typescript`], createParenthesizedExpressions: true};
+        let ast;
+        let offset = 0;
+        if (name === `v-for`) {
+            const forMatch = expression.match(/([\s\S]*?)\s+(?:in|of)\s+([\s\S]*)/d);
+            if (!forMatch) {
+                continue;
+            }
+            ast = parseExpression(forMatch[2], parserOptions);
+            offset = forMatch.indices[2][0];
+        } else if (name === `v-slot` || name.startsWith(`v-slot:`) || name.startsWith(`#`)) {
+            ast = parseExpression(`(${expression}) => {}`, parserOptions);
+            offset = -1;
+        } else if (name.startsWith(`@`) || name.startsWith(`v-on:`)) {
+            ast = parseScript(expression, {...parserOptions, sourceType: `module`, allowReturnOutsideFunction: true});
+        } else {
+            ast = parseExpression(expression, parserOptions);
+        }
+        if (transformStaticCalls(ctx, ast, offset, source, fileOffset)) {
             ctx.templateHasTranslations = true;
+            const quote = valueIndex === 3 ? `'` : `"`;
+            ctx.src.overwrite(fileOffset, node.range[0] + end, encodeTemplateExpression(source.toString(), quote));
         }
     }
 }
@@ -132,9 +164,11 @@ function transformInterpolations(ctx, node) {
         const start = cursor + 2;
         let end = text.indexOf(`}}`, start);
         let ast;
+        let expression;
         while (end >= 0) {
             try {
-                ast = parseExpression(text.slice(start, end), {plugins: [`typescript`]});
+                expression = decodeTemplateExpression(text.slice(start, end));
+                ast = parseExpression(expression, {plugins: [`typescript`], createParenthesizedExpressions: true});
                 break;
             } catch {
                 end = text.indexOf(`}}`, end + 2);
@@ -143,8 +177,10 @@ function transformInterpolations(ctx, node) {
         if (!ast) {
             break;
         }
-        if (transformStaticCalls(ctx, ast, node.range[0] + start)) {
+        const source = new MagicString(expression);
+        if (transformStaticCalls(ctx, ast, 0, source, node.range[0] + start)) {
             ctx.templateHasTranslations = true;
+            ctx.src.overwrite(node.range[0] + start, node.range[0] + end, encodeTemplateExpression(source.toString()));
         }
         cursor = end + 2;
     }
@@ -169,10 +205,13 @@ function transformTranslationComponents(ctx, rootNode) {
 
     const line = findLineNumber(rootNode.range, ctx.src.original);
     const location = `<t> tag at (${ctx.relativePath}:${line})`;
-    const dataStr = rootNode.attributes[`:d`] || ``;
+    const dataAttribute = templateAttributes(rootNode).find(attribute => attribute[1] === `:d`);
+    const dataIndex = dataAttribute?.[2] !== undefined ? 2 : dataAttribute?.[3] !== undefined ? 3 : 4;
+    const dataRange = dataAttribute?.indices[dataIndex];
+    const dataStr = dataRange ? decodeTemplateExpression(ctx.src.slice(rootNode.range[0] + dataRange[0], rootNode.range[0] + dataRange[1])) : ``;
     const translationObjectString = createTranslationObjectString(ctx, rootNode.innerHTML, location, dataStr);
 
-    ctx.src.appendLeft(rootNode.range[0] + 2, ` :value="${translationObjectString}"`);
+    ctx.src.appendLeft(rootNode.range[0] + 2, ` :value="${encodeTemplateExpression(translationObjectString)}"`);
 
     let start = null;
     let end = null;
@@ -276,7 +315,7 @@ function outerReplacements(replacements) {
     return replacements.filter(item => !replacements.some(other => other !== item && other.start <= item.start && other.end >= item.end));
 }
 
-function transformStaticCalls(ctx, ast, offset) {
+function transformStaticCalls(ctx, ast, offset, src = ctx.src, fileOffset = 0) {
     const replacements = [];
     walk(ast, (node) => {
         if (node.type !== `CallExpression`) {
@@ -292,15 +331,17 @@ function transformStaticCalls(ctx, ast, offset) {
         if (!literal || !(literal.type === `StringLiteral` || (literal.type === `TemplateLiteral` && literal.expressions.length === 0))) {
             throw new Error(`[Eye-In Translation] ${name} requires a static string (${ctx.fileId})`);
         }
-        const srcStr = ctx.src.original.slice(offset + literal.start + 1, offset + literal.end - 1);
-        const line = findLineNumber([offset + literal.start + 1], ctx.src.original);
+        const srcStr = src.original.slice(offset + literal.start + 1, offset + literal.end - 1);
+        const line = src === ctx.src
+            ? findLineNumber([offset + literal.start + 1], ctx.src.original)
+            : findLineNumber([fileOffset], ctx.src.original) + src.original.slice(0, offset + literal.start + 1).split(`\n`).length - 1;
         const location = `JS template literal at (${ctx.relativePath}:${line})`;
         let dataStr = ``;
         if (node.arguments[1]) {
             const argument = node.arguments[1];
             const start = offset + argument.start;
             const end = offset + argument.end;
-            const data = new MagicString(ctx.src.original.slice(start, end));
+            const data = new MagicString(src.original.slice(start, end));
             for (const replacement of outerReplacements(replacements.filter(item => item.start >= start && item.end <= end))) {
                 data.overwrite(replacement.start - start, replacement.end - start, replacement.text);
             }
@@ -314,13 +355,13 @@ function transformStaticCalls(ctx, ast, offset) {
         });
     });
     for (const replacement of outerReplacements(replacements)) {
-        ctx.src.overwrite(replacement.start, replacement.end, replacement.text);
+        src.overwrite(replacement.start, replacement.end, replacement.text);
     }
     return replacements.length > 0;
 }
 
 function transformScript(ctx, rootNode) {
-    const offset = rootNode.range[0] + rootNode.outerHTML.indexOf(`>`) + 1;
+    const offset = rootNode.range[0] + openingTag(rootNode).length;
     if (!rootNode.innerHTML.includes(`staticTr`) && !ctx.templateHasTranslations) {
         return {rootNode, ast: null, offset};
     }
@@ -335,7 +376,8 @@ function parseScriptBlock(rootNode) {
     const lang = rootNode.attributes.lang;
     return parseScript(rootNode.innerHTML, {
         sourceType: `module`,
-        plugins: [...(lang === `ts` || lang === `tsx` ? [`typescript`] : []), ...(lang === `jsx` || lang === `tsx` || rootNode.attributes.type === `text/jsx` ? [`jsx`] : [])]
+        createParenthesizedExpressions: true,
+        plugins: [...([`ts`, `mts`, `tsx`, `mtsx`].includes(lang) ? [`typescript`, `decorators-legacy`] : []), ...([`jsx`, `tsx`, `mtsx`].includes(lang) || rootNode.attributes.type === `text/jsx` ? [`jsx`] : [])]
     });
 }
 
@@ -388,7 +430,7 @@ function injectTrComposable(ctx, rootNode, ast, offset) {
     const injection = `\nconst _eTr = ${injectName}('_eTr');\n`;
     if (imports.length > 0) {
         if (importText) {
-            ctx.src.appendLeft(offset, importText);
+            ctx.src.appendLeft(offset, importText + (/^[\r\n]/.test(ctx.src.original.slice(offset)) ? `` : `\n`));
         }
         ctx.src.appendLeft(offset + imports[imports.length - 1].end, injection);
     } else {

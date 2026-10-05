@@ -3,6 +3,7 @@ import {describe, it, expect} from "vitest";
 import {parse as parseScript} from "@babel/parser";
 import {parse as parseHTML} from "node-html-parser";
 import MagicString from "magic-string";
+import {parse as parseSFC, compileTemplate} from "vue/compiler-sfc";
 import transformVueFile from "../src/vite/transformVueFile.js";
 
 function transform(code, fileId = `/project/components/Test.vue`) {
@@ -19,7 +20,7 @@ function transform(code, fileId = `/project/components/Test.vue`) {
 
 function expectValidScripts(code) {
     for (const script of parseHTML(code).querySelectorAll(`script`)) {
-        expect(() => parseScript(script.innerHTML, {sourceType: `module`, plugins: [`typescript`, `jsx`]})).not.toThrow();
+        expect(() => parseScript(script.innerHTML, {sourceType: `module`, plugins: [`typescript`, `jsx`, `decorators-legacy`]})).not.toThrow();
     }
 }
 
@@ -217,5 +218,60 @@ describe(`compatibility from website golden comparison`, () => {
     it(`supports legacy JSX script type attributes`, () => {
         const original = `<script type="text/jsx">\nexport default {render() { return <div onClick.prevent="" />; }};\n</script>`;
         expect(transform(original).code).toBe(original);
+    });
+});
+
+describe(`valid Vue syntax from final review`, () => {
+    it.each([
+        `<template><div v-for="item of [staticTr('Hello')]" /></template>`,
+        `<template><Panel v-slot="{title = staticTr('Hello')}" /></template>`,
+        `<template><Panel #default="{title = staticTr('Hello')}" /></template>`,
+        `<template><div :title="ok &amp;&amp; staticTr('Hello')" /></template>`,
+        `<template><div :title="staticTr(&quot;Hello&quot;)" /></template>`,
+        `<template>{{ ok &amp;&amp; staticTr('Hello') }}</template>`,
+        `<template><div v-text="staticTr('Hello')" /></template>`,
+        `<template><div v-tooltip="staticTr('Hello')" /></template>`,
+        `<template><t :value="translation" :d="{label: staticTr('Hello')}" /></template>`
+    ])(`compiles calls in valid Vue expressions: %s`, (original) => {
+        const {code, translations} = transform(original);
+        expect(code).not.toContain(`staticTr(`);
+        expect(code).toContain(`_eTr.tr(`);
+        const {descriptor, errors} = parseSFC(code);
+        expect(errors).toEqual([]);
+        const result = compileTemplate({source: descriptor.template.content, filename: `Test.vue`, id: `test`});
+        expect(result.errors).toEqual([]);
+        expect(Object.values(translations[`en-US`]).map(value => value.source)).toEqual([`Hello`]);
+    });
+
+    it(`separates an inserted import from one on the opening tag line`, () => {
+        const {code} = transform(`<script setup>import {ref} from 'vue';\nconst x = staticTr('Hello');\n</script>`);
+        expectValidScripts(code);
+    });
+
+    it.each([`ts`, `mts`, `tsx`, `mtsx`])(`supports Vue's %s script syntax and decorators`, (lang) => {
+        const {code} = transform(`<script setup lang="${lang}">\nfunction dec(target: any) {}\n@dec\nclass Model {}\nconst label: string = staticTr('Hello');\n</script>`);
+        expect(code).not.toContain(`staticTr(`);
+    });
+});
+
+describe(`exact argument ranges`, () => {
+    it(`keeps parenthesized sequence expressions valid`, () => {
+        const {code} = transform(`<script setup>\nconst title = staticTr("Hello", (a, b));\n</script>`);
+        expect(code).toContain(`data: (a, b)`);
+        expectValidScripts(code);
+    });
+
+    it(`compiles nested translation calls in data arguments`, () => {
+        const {code} = transform(`<script setup>\nconst title = staticTr("Hello", {label: staticTr("World")});\n</script>`);
+        expect(code).not.toContain(`staticTr(`);
+        expect(code.match(/_eTr\.tr\(/g)).toHaveLength(2);
+        expectValidScripts(code);
+    });
+
+    it(`compiles and escapes data copied into a generated t value`, () => {
+        const {code} = transform(`<template><t :d="{label: staticTr('World')}">Hello</t></template>`);
+        expect(code).not.toContain(`staticTr(`);
+        const {descriptor} = parseSFC(code);
+        expect(compileTemplate({source: descriptor.template.content, filename: `Test.vue`, id: `test`}).errors).toEqual([]);
     });
 });
