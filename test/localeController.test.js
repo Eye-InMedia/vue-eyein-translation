@@ -70,4 +70,54 @@ describe(`application locale controller`, () => {
         expect(app.runtime.getLocale()).toBe(`en-US`);
         app.controller.dispose();
     });
+    it(`cancels an older successful load after an invalid selection rolls back`, async () => {
+        const french = deferred();
+        const app = await controllerFixture({'/assets/locales/fr-CA.locale': () => french.promise});
+        app.localeState.value = `fr-CA`;
+        app.localeState.value = `xx-invalid`;
+        await expect(app.controller.ready()).rejects.toThrow(/locale/i);
+        french.resolve({});
+        await new Promise(resolve => setImmediate(resolve));
+        expect(app.runtime.getLocale()).toBe(`en-US`);
+        expect(app.localeState.value).toBe(`en-US`);
+        expect(app.localeCookie.value).toBe(`en-US`);
+        app.controller.dispose();
+    });
+    it(`rejects the failed navigation but allows navigation in the restored locale`, async () => {
+        const french = deferred();
+        const app = await controllerFixture({'/assets/locales/fr-CA.locale': () => french.promise});
+        app.localeState.value = `fr-CA`;
+        const navigation = app.controller.ready();
+        french.reject(new Error(`Chunk unavailable`));
+        await expect(navigation).rejects.toThrow(`Chunk unavailable`);
+        expect(app.localeState.value).toBe(`en-US`);
+        expect(app.runtime.getLocale()).toBe(`en-US`);
+        expect(app.localeCookie.value).toBe(`en-US`);
+        await expect(app.controller.ready()).resolves.toBeUndefined();
+        expect(app.onError).toHaveBeenCalledOnce();
+        app.controller.dispose();
+    });
+    it(`delivers the latest failure to a waiter before an obsolete load finishes`, async () => {
+        const french = deferred(), filipino = deferred();
+        const app = await controllerFixture({
+            '/assets/locales/fr-CA.locale': () => french.promise,
+            '/assets/locales/fil-PH.locale': () => filipino.promise
+        });
+        app.localeState.value = `fr-CA`;
+        let failure;
+        const navigation = app.controller.ready().catch((error) => {
+            failure = error;
+        });
+        app.localeState.value = `fil-PH`;
+        filipino.reject(new Error(`Latest chunk unavailable`));
+        await new Promise(resolve => setImmediate(resolve));
+        try {
+            expect(failure?.message).toBe(`Latest chunk unavailable`);
+            await expect(app.controller.ready()).resolves.toBeUndefined();
+        } finally {
+            french.resolve({});
+            await navigation;
+            app.controller.dispose();
+        }
+    });
 });
