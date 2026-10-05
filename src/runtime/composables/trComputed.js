@@ -1,4 +1,4 @@
-import _eTr from "../js/_eTr.js";
+import {getNuxtTranslationRuntime} from "../js/runtimeContext.js";
 
 /**
  *
@@ -8,5 +8,5 @@ import _eTr from "../js/_eTr.js";
  * @returns {import("vue").ComputedRef<string>} translated text, updated when the locale changes
  */
 export default function trComputed(value, data = null, locale = null) {
-    return _eTr.trComputed(value, data, locale);
+    return getNuxtTranslationRuntime().trComputed(value, data, locale);
 }

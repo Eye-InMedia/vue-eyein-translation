@@ -1,4 +1,4 @@
-import _eTr from "../js/_eTr.js";
+import {getNuxtTranslationRuntime} from "../js/runtimeContext.js";
 
 /**
  *
@@ -8,5 +8,5 @@ import _eTr from "../js/_eTr.js";
  * @returns {string} translated text
  */
 export default function tr(value, data = null, locale = null) {
-    return _eTr.tr(value, data, locale);
+    return getNuxtTranslationRuntime().tr(value, data, locale);
 }

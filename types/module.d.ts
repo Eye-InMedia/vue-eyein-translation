@@ -24,3 +24,9 @@ declare module "vue" {
         _eTr: ETr;
     }
 }
+
+declare module "#app" {
+    interface NuxtApp {
+        $eyeinTranslation: ETr;
+    }
+}
