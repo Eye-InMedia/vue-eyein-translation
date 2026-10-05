@@ -10,3 +10,9 @@ describe(`replaceDataBindings`, () => {
         expect(replaceDataBindings(`{name|upper} {city|lower|capitalize}`, {name: `bob`, city: `MONTREAL`}, `en-US`, {})).toBe(`BOB Montreal`);
     });
 });
+
+describe(`replaceDataBindings with special replacement patterns`, () => {
+    it(`inserts values literally, even with $ replacement patterns`, () => {
+        expect(replaceDataBindings(`Hi {name}!`, {name: `Bob$' x`}, `en-US`, {})).toBe(`Hi Bob$' x!`);
+    });
+});

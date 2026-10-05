@@ -22,7 +22,7 @@ export default function replaceDataBindings(str, data, locale, localeOptions) {
                 transformedValue = applyFilter(filter, transformedValue, locale, localeOptions);
             }
         }
-        str = str.replace(fullMatch, transformedValue);
+        str = str.replace(fullMatch, () => transformedValue);
     }
 
     return str;

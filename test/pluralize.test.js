@@ -13,4 +13,8 @@ describe(`pluralize`, () => {
         // fr selects "many" for 1 000 000
         expect(pluralize(`{zero|one|few|{n} other}`, {n: 1000000}, `fr-CA`)).toBe(`{n} other`);
     });
+
+    it(`inserts the chosen text literally, even with $ replacement patterns`, () => {
+        expect(pluralize(`{none|one $' x|{n} many}`, {n: 1}, `en-US`)).toBe(`one $' x`);
+    });
 });

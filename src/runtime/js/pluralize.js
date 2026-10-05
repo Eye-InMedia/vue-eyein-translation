@@ -59,7 +59,7 @@ export default function pluralize(str, data, locale) {
             }
         }
 
-        str = str.replace(fullMatch, choice.replace(/\[;;;\]/g, `|`));
+        str = str.replace(fullMatch, () => choice.replace(/\[;;;\]/g, `|`));
     }
 
     return str;
