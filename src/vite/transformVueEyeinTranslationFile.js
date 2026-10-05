@@ -17,7 +17,8 @@ export default function transformVueEyeinTranslationFile(ctx) {
         for (const locale of ctx.options.locales) {
             const files = ctx.options.additionalLocalesDirs
                 .map(directory => path.join(ctx.rootDir, directory, `${locale}.locale`))
-                .filter(file => fs.existsSync(file));
+                .filter(file => fs.existsSync(file))
+                .sort().reverse();
             files.push(path.join(ctx.rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`));
             const names = [];
             for (const file of files) {
