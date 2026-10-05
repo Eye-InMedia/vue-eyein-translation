@@ -1,8 +1,14 @@
+import {fileURLToPath} from "node:url";
 import {parse} from "node-html-parser";
 import MagicString from "magic-string";
 import {parse as parseScript, parseExpression} from "@babel/parser";
 import {createTranslationId, debounce, findLineNumber} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
+
+// Source entry points and the bundled Nuxt module resolve runtime files from different directories.
+const translationComponents = new Set([`../runtime`, `./runtime`].flatMap(directory =>
+    [`t.vue`, `vue2T.vue`].map(name => fileURLToPath(new URL(`${directory}/components/${name}`, import.meta.url)).replace(/\\/g, `/`))
+));
 
 let updatedLocales = new Set();
 const hmrLocalesUpdate = debounce((ctx) => {
@@ -14,7 +20,7 @@ const hmrLocalesUpdate = debounce((ctx) => {
 }, 500);
 
 export default function transformVueFile(ctx) {
-    if (ctx.fileId.includes(`/node_modules/`) || ctx.fileId.includes(`/t.vue`) || ctx.fileId.includes(`/vue2T.vue`)) {
+    if (ctx.fileId.includes(`/node_modules/`) || translationComponents.has(ctx.fileId.replace(/\\/g, `/`))) {
         return false;
     }
 

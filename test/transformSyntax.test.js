@@ -1,3 +1,4 @@
+import {fileURLToPath} from "node:url";
 import {describe, it, expect} from "vitest";
 import {parse as parseScript} from "@babel/parser";
 import {parse as parseHTML} from "node-html-parser";
@@ -188,5 +189,20 @@ describe(`opening tag attribute ranges`, () => {
         expect(code).toContain(`title="x > y"`);
         expect(code).toContain(`:alt="_eTr.tr(`);
         expect(code).not.toContain(`alt.t`);
+    });
+});
+
+describe(`component exclusions`, () => {
+    it.each([`t.vue`, `vue2T.vue`, `t.vue-example.vue`])(`transforms a user component named %s`, (name) => {
+        const {code} = transform(`<template><t>Hello</t></template>`, `/project/components/${name}`);
+        expect(code).toContain(`<t :value=`);
+    });
+});
+
+describe(`internal components`, () => {
+    it.each([`t.vue`, `vue2T.vue`])(`excludes the plugin's own %s`, (name) => {
+        const original = `<template><t>Hello</t></template>`;
+        const fileId = fileURLToPath(new URL(`../src/runtime/components/${name}`, import.meta.url));
+        expect(transform(original, fileId).code).toBe(original);
     });
 });
