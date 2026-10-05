@@ -11,7 +11,7 @@ export interface ETr {
     getDefaultLocale(): string;
     setLocale(locale: string): void;
     tr(value: TranslationValue, data?: Record<string, unknown> | null, locale?: string | null): string;
-    trComputed(value: TranslationValue, data?: Record<string, unknown> | null): ComputedRef<string>;
+    trComputed(value: TranslationValue, data?: Record<string, unknown> | null, locale?: string | null): ComputedRef<string>;
     getNearestLocale(navigatorLocales?: readonly string[]): string;
     detectBrowserLocale(): string;
 }
