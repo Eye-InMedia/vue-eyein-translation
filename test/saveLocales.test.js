@@ -8,7 +8,7 @@ const locales = [`en-US`, `fr-CA`];
 
 function createCtx(options = {}) {
     return {
-        options: {locales, assetsDir: `assets`, purgeOldTranslations: false, autoTranslate: {}, ...options},
+        options: {locales, inlineLocales: `en-US||fr-CA`, assetsDir: `assets`, purgeOldTranslations: false, autoTranslate: {}, ...options},
         translations: {
             "en-US": {zzhello: {source: `Hello`, target: `Hello`}},
             "fr-CA": {zzhello: {source: `Hello`, target: `Bonjour`}}
@@ -47,7 +47,7 @@ describe(`saveLocales`, () => {
         expect(readLocale(`fr-CA`).zzhello.target).toBe(`Salut`);
     });
 
-    it.skip(`writes automatic translations to the locale file`, async () => {
+    it(`writes automatic translations to the locale file`, async () => {
         const ctx = createCtx({
             autoTranslate: {
                 locales: [`fr-CA`],

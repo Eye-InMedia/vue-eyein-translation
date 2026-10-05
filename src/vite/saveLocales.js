@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
 
-export default function saveLocales(ctx, localesToSave = null) {
+export default async function saveLocales(ctx, localesToSave = null) {
     if (ctx.options.debug) {
         console.log(`[Eye-In Translation] Saving translation files...`);
     }
@@ -35,10 +35,11 @@ export default function saveLocales(ctx, localesToSave = null) {
             }
 
             if (ctx.options.autoTranslate.locales?.includes(locale) && ctx.options.autoTranslate.translationFunction) {
-                autoTranslateLocale(ctx, locale)
-                    .catch((e) => {
-                        console.error(e);
-                    });
+                try {
+                    await autoTranslateLocale(ctx, locale);
+                } catch (e) {
+                    console.error(e);
+                }
             }
         } else if (ctx.options.debug) {
             console.log(`[Eye-In Translation] Skipping purge and auto translation in dev mode...`);

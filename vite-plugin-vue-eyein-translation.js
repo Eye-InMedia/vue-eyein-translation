@@ -28,13 +28,13 @@ export default function viteEyeinTranslation(options = {}) {
             additionalTranslations = result.additionalTranslations;
             errors = [];
         },
-        buildEnd() {
+        async buildEnd() {
             if (errors.length > 0) {
                 console.error(errors.map(e => e.stack).join(`\n`));
                 throw new AggregateError(errors, `[Eye-In Translation] ${errors.length} error(s) found during build`);
             }
 
-            saveLocales({options, translations, additionalTranslations, hmr});
+            await saveLocales({options, translations, additionalTranslations, hmr});
         },
         transform(code, fileId) {
             /**

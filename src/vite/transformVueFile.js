@@ -11,7 +11,7 @@ const hmrLocalesUpdate = debounce((ctx) => {
     if (updatedLocales.size === 0) {
         return;
     }
-    saveLocales(ctx, [...updatedLocales]);
+    saveLocales(ctx, [...updatedLocales]).catch(e => console.error(e));
     updatedLocales = new Set();
 }, 500);
 
