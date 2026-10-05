@@ -21,9 +21,9 @@
         "build": "nuxt-module-build build",
         "lint": "eslint .",
         "test": "vitest run",
-        "prepublish": "npm run build",
-        "publish": "npm publish",
-        "publish-beta": "npm publish --tag beta"
+        "prepublishOnly": "npm run lint && npm test && npm run build",
+        "release": "npm publish",
+        "release:beta": "npm publish --tag beta"
     },
     "dependencies": {
         "@nuxt/kit": "^3.14.1592",
