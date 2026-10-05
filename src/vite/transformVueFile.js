@@ -1,7 +1,7 @@
 import {parse} from "node-html-parser";
 import MagicString from "magic-string";
 import {parse as parseScript} from "@babel/parser";
-import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex} from "./viteUtils.js";
+import {createTranslationId, debounce, findLineNumber} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
 let updatedLocales = new Set();
@@ -258,36 +258,61 @@ function transformScript(ctx, rootNode) {
         plugins: [...(lang === `ts` || lang === `tsx` ? [`typescript`] : []), ...(lang === `jsx` || lang === `tsx` ? [`jsx`] : [])]
     });
     if (transformStaticCalls(ctx, ast, offset)) {
-        injectTrComposable(ctx);
+        injectTrComposable(ctx, rootNode, ast, offset);
     }
 }
 
-function injectTrComposable(ctx) {
+function injectTrComposable(ctx, rootNode, ast, offset) {
     if (ctx.trInjected) {
         return;
     }
-
     ctx.trInjected = true;
-    const originalSrc = ctx.src.original;
-
-    if (!/import \{.*inject.*\} from ['"]vue['"]/.test(ctx.src.toString())) {
-        ctx.src.replace(/(<script.*>)/, `$1\nimport {inject} from "vue"`);
-    }
-
-    const setupRegex = /<script [^>]*setup[^>]*>/g;
-    if (!setupRegex.test(originalSrc)) {
+    if (!(`setup` in rootNode.attributes)) {
         return;
     }
 
-    let index = setupRegex.lastIndex;
-
-    const endOfImportsIndex = getEndOfImportsIndex(originalSrc);
-    if (endOfImportsIndex >= 0) {
-        index = endOfImportsIndex;
+    const imports = ast.program.body.filter(node => node.type === `ImportDeclaration`);
+    const identifiers = new Set();
+    walk(ast, (node) => {
+        if (node.type === `Identifier`) {
+            identifiers.add(node.name);
+        }
+    });
+    let injectName;
+    for (const declaration of imports) {
+        if (declaration.source.value !== `vue` || declaration.importKind === `type`) {
+            continue;
+        }
+        for (const specifier of declaration.specifiers) {
+            if (specifier.type === `ImportSpecifier` && specifier.imported.name === `inject` && specifier.importKind !== `type`) {
+                injectName = specifier.local.name;
+            } else if (specifier.type === `ImportNamespaceSpecifier`) {
+                injectName = `${specifier.local.name}.inject`;
+            }
+        }
     }
 
-    if (!/inject\([`'"]_eTr[`'"]\)/.test(ctx.src.toString())) {
-        ctx.src.appendRight(index, `\nconst _eTr = inject('_eTr');\n`);
+    let importText = ``;
+    if (!injectName) {
+        injectName = identifiers.has(`inject`) ? `__eyeinInject` : `inject`;
+        while (identifiers.has(injectName)) {
+            injectName += `_`;
+        }
+        const specifier = injectName === `inject` ? `inject` : `inject as ${injectName}`;
+        importText = `\nimport {${specifier}} from "vue"`;
+    }
+    const hasTranslationBinding = ast.program.body.some(node => node.type === `VariableDeclaration` && node.declarations.some(declaration => declaration.id.type === `Identifier` && declaration.id.name === `_eTr`));
+    if (hasTranslationBinding) {
+        return;
+    }
+    const injection = `\nconst _eTr = ${injectName}('_eTr');\n`;
+    if (imports.length > 0) {
+        if (importText) {
+            ctx.src.appendLeft(offset, importText);
+        }
+        ctx.src.appendLeft(offset + imports[imports.length - 1].end, injection);
+    } else {
+        ctx.src.appendLeft(offset, importText + injection);
     }
 }
 

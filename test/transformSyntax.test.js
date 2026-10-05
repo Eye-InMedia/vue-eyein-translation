@@ -51,3 +51,38 @@ describe(`script call syntax`, () => {
         expect(transform(original).code).toBe(original);
     });
 });
+
+describe(`script injection`, () => {
+    it(`inserts the composable after a multiline import`, () => {
+        const {code} = transform(`<script setup>\nimport {\n    ref,\n    computed\n} from "vue";\nconst title = staticTr("Hello");\n</script>`);
+        expect(code.indexOf(`const _eTr`)).toBeGreaterThan(code.indexOf(`} from "vue";`));
+        expectValidScripts(code);
+    });
+
+    it(`reuses an inject imported on several lines`, () => {
+        const {code} = transform(`<script setup>\nimport {\n    inject,\n    ref\n} from "vue";\nconst title = staticTr("Hello");\n</script>`);
+        expect(code).not.toContain(`import {inject}`);
+        expectValidScripts(code);
+    });
+
+    it(`reuses an aliased inject import`, () => {
+        const {code} = transform(`<script setup>\nimport {inject as provideValue} from "vue";\nconst title = staticTr("Hello");\n</script>`);
+        expect(code).toContain(`const _eTr = provideValue('_eTr');`);
+        expect(code).not.toContain(`import {inject}`);
+        expectValidScripts(code);
+    });
+
+    it(`does not confuse a type-only import with a runtime inject`, () => {
+        const {code} = transform(`<script setup lang="ts">\nimport type {inject} from "vue";\nconst title = staticTr("Hello");\n</script>`);
+        expect(code).toContain(`import {inject as __eyeinInject} from "vue"`);
+        expect(code).toContain(`const _eTr = __eyeinInject('_eTr');`);
+        expectValidScripts(code);
+    });
+
+    it(`handles script content on the opening tag line`, () => {
+        const {code} = transform(`<script setup>const title = staticTr("Hello");</script>`);
+        expect(code).not.toContain(`staticTr(`);
+        expect(code).toContain(`const _eTr`);
+        expectValidScripts(code);
+    });
+});
