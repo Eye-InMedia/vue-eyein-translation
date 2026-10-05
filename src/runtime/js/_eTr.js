@@ -2,6 +2,7 @@ import {computed, reactive, ref} from "vue";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
 import {applyFilter} from "./filters.js";
+import {nearestLocale, detectBrowserLocale} from "./localeSelection.js";
 
 let localeFilesPromises = {};
 /*{localeFilesPromisesImport}*/
@@ -210,20 +211,7 @@ const _eTr = {
     },
 
     getNearestLocale(navigatorLocales = [`en-US`]) {
-        for (const navigatorLocale of navigatorLocales) {
-            if (locales.includes(navigatorLocale)) {
-                return navigatorLocale;
-            }
-
-            const shortNavigatorLocale = navigatorLocale.substring(0, 2);
-
-            const similarLocale = locales.find(l => l.startsWith(shortNavigatorLocale));
-            if (similarLocale) {
-                return similarLocale;
-            }
-        }
-
-        return locales[0];
+        return nearestLocale(navigatorLocales, locales);
     },
 
     getSSRProps(binding) {
@@ -264,16 +252,7 @@ const _eTr = {
     },
 
     detectBrowserLocale() {
-        if (!globalThis.localStorage || !globalThis.navigator) {
-            return null;
-        }
-
-        const locale = localStorage.getItem(`locale`);
-        if (!locale) {
-            return _eTr.getNearestLocale(navigator.languages);
-        }
-
-        return locale;
+        return detectBrowserLocale(locales);
     }
 };
 
