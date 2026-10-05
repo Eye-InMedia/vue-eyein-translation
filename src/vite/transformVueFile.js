@@ -1,8 +1,8 @@
 import {parse} from "node-html-parser";
+import MagicString from "magic-string";
+import {parse as parseScript} from "@babel/parser";
 import {createTranslationId, debounce, findLineNumber, getEndOfImportsIndex} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
-
-const STATIC_TR_CALL_REGEX = /(this\.)?staticTr(Computed)?\s*\(\s*([`'"])((?:\\.|(?!\3)[\s\S])+?)\3\s*(?:,\s*([\s\S]*?\S[\s\S]*?))?\s*,?\s*\)/dg;
 
 let updatedLocales = new Set();
 const hmrLocalesUpdate = debounce((ctx) => {
@@ -39,7 +39,7 @@ export default function transformVueFile(ctx) {
                 transformTemplate(ctx, rootNode);
                 break;
             case `SCRIPT`:
-                transformScript(ctx);
+                transformScript(ctx, rootNode);
                 break;
         }
     }
@@ -187,29 +187,77 @@ function transformTranslationDotTAttributes(ctx, rootNode, srcAttributeName) {
     }
 }
 
-function transformScript(ctx) {
-    let hasMatches = false;
-
-    let allMatches = ctx.src.original.matchAll(STATIC_TR_CALL_REGEX);
-    for (const matches of allMatches) {
-        const fullMatch = matches[0];
-        const line = findLineNumber(matches.indices[4], ctx.src.original);
-        const thisStr = matches[1] || ``;
-        const computedStr = matches[2] || ``;
-        const srcStr = matches[4];
-        const location = `JS template literal at (${ctx.relativePath}:${line})`;
-
-        let dataStr = ``;
-        if (matches[5]) {
-            dataStr = matches[5].trim();
-        }
-
-        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
-        ctx.src.replaceAll(fullMatch, `${thisStr}_eTr.tr${computedStr}(${translationObjectString})`);
-        hasMatches = true;
+function walk(node, visit) {
+    if (!node || typeof node !== `object` || typeof node.type !== `string`) {
+        return;
     }
+    for (const value of Object.values(node)) {
+        if (Array.isArray(value)) {
+            for (const child of value) {
+                walk(child, visit);
+            }
+        } else {
+            walk(value, visit);
+        }
+    }
+    visit(node);
+}
 
-    if (hasMatches) {
+function outerReplacements(replacements) {
+    return replacements.filter(item => !replacements.some(other => other !== item && other.start <= item.start && other.end >= item.end));
+}
+
+function transformStaticCalls(ctx, ast, offset) {
+    const replacements = [];
+    walk(ast, (node) => {
+        if (node.type !== `CallExpression`) {
+            return;
+        }
+        const callee = node.callee;
+        const isThis = callee.type === `MemberExpression` && !callee.computed && callee.object.type === `ThisExpression`;
+        const name = isThis ? callee.property.name : callee.type === `Identifier` ? callee.name : null;
+        if (name !== `staticTr` && name !== `staticTrComputed`) {
+            return;
+        }
+        const literal = node.arguments[0];
+        if (!literal || !(literal.type === `StringLiteral` || (literal.type === `TemplateLiteral` && literal.expressions.length === 0))) {
+            throw new Error(`[Eye-In Translation] ${name} requires a static string (${ctx.fileId})`);
+        }
+        const srcStr = ctx.src.original.slice(offset + literal.start + 1, offset + literal.end - 1);
+        const line = findLineNumber([offset + literal.start + 1], ctx.src.original);
+        const location = `JS template literal at (${ctx.relativePath}:${line})`;
+        let dataStr = ``;
+        if (node.arguments[1]) {
+            const argument = node.arguments[1];
+            const start = offset + argument.start;
+            const end = offset + argument.end;
+            const data = new MagicString(ctx.src.original.slice(start, end));
+            for (const replacement of outerReplacements(replacements.filter(item => item.start >= start && item.end <= end))) {
+                data.overwrite(replacement.start - start, replacement.end - start, replacement.text);
+            }
+            dataStr = data.toString();
+        }
+        const translationObjectString = createTranslationObjectString(ctx, srcStr, location, dataStr);
+        replacements.push({
+            start: offset + node.start,
+            end: offset + node.end,
+            text: `${isThis ? `this.` : ``}_eTr.tr${name === `staticTrComputed` ? `Computed` : ``}(${translationObjectString})`
+        });
+    });
+    for (const replacement of outerReplacements(replacements)) {
+        ctx.src.overwrite(replacement.start, replacement.end, replacement.text);
+    }
+    return replacements.length > 0;
+}
+
+function transformScript(ctx, rootNode) {
+    const offset = rootNode.range[0] + rootNode.outerHTML.indexOf(`>`) + 1;
+    const lang = rootNode.attributes.lang;
+    const ast = parseScript(rootNode.innerHTML, {
+        sourceType: `module`,
+        plugins: [...(lang === `ts` || lang === `tsx` ? [`typescript`] : []), ...(lang === `jsx` || lang === `tsx` ? [`jsx`] : [])]
+    });
+    if (transformStaticCalls(ctx, ast, offset)) {
         injectTrComposable(ctx);
     }
 }
