@@ -32,7 +32,7 @@ export default {
         app.prototype.setLocale = eTr.setLocale;
         app.prototype.loadLocale = eTr.loadLocale;
         app.prototype.staticTr = compiledThrow;
-        app.prototype.staticTr = compiledThrow;
+        app.prototype.staticTrComputed = compiledThrow;
 
         app.directive(`t`, {
             bind: eTr.mountedUpdated,
