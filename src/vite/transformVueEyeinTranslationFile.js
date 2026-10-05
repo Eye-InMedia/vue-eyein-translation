@@ -14,6 +14,7 @@ export default function transformVueEyeinTranslationFile(ctx) {
         let importsLocale = [];
         let importsCode = ``;
         let code = ``;
+        const dictionaries = [];
         for (const locale of ctx.options.locales) {
             const files = ctx.options.additionalLocalesDirs
                 .map(directory => path.join(ctx.rootDir, directory, `${locale}.locale`))
@@ -29,9 +30,10 @@ export default function transformVueEyeinTranslationFile(ctx) {
                 names.push(importName);
                 code += `localeModules.push(${importName});\n`;
             }
-            code += `translations["${locale}"] = {...${names.join(`, ...`)}};\n`;
+            dictionaries.push(`[${JSON.stringify(locale)}]: {...${names.join(`, ...`)}}`);
         }
 
+        code += `translations = reactive({${dictionaries.join(`, `)}});\n`;
         ctx.src.prepend(importsCode);
         ctx.src.replace(`/*{translations}*/`, code);
         ctx.src.replace(`/*{localesImportsOrder}*/`, `localesImportsOrder = ${JSON.stringify(importsLocale)};`);

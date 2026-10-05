@@ -1,12 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import {afterEach, expect, it} from "vitest";
+import * as vue2 from "vue2-runtime";
 import viteEyeinTranslation from "../vite-plugin-vue-eyein-translation.js";
 import {runtimeSource} from "./helpers/runtimeSource.js";
 
 const root = new URL(`../.tmp/hmr-fixture/`, import.meta.url).pathname;
 afterEach(() => fs.rmSync(root, {recursive: true, force: true}));
-it(`updates complete shared dictionaries without changing instance locales or main precedence`, async () => {
+it.each([[`Vue 3`, undefined], [`Vue 2.7`, vue2]])(`updates complete shared dictionaries and computed values under %s`, async (version, vueImplementation) => {
     for (const directory of [`assets/locales`, `a-extra/locales`, `extra/locales`]) fs.mkdirSync(`${root}/${directory}`, {recursive: true});
     const imports = {};
     for (const locale of [`en-US`, `fr-CA`]) {
@@ -29,10 +30,12 @@ it(`updates complete shared dictionaries without changing instance locales or ma
         acceptedPaths = paths;
         update = callback;
     }};
-    const {create} = await runtimeSource({source, imports, hot});
+    const {create} = await runtimeSource({source, imports, hot, vueImplementation});
     const english = create(), french = create();
     await english.changeLocale(`en-US`);
     await french.changeLocale(`fr-CA`);
+    const computedGreeting = french.trComputed(`@@greeting`);
+    expect(computedGreeting.value).toBe(`Bonjour`);
     expect(french.tr(`@@greeting`)).toBe(`Bonjour`);
     expect(french.tr(`@@shared`)).toBe(`first`);
     update(acceptedPaths.map(file => file.includes(`/extra/locales/fr-CA`) ? {default: {greeting: `extra changed`, other: `new`}} : undefined));
@@ -40,6 +43,7 @@ it(`updates complete shared dictionaries without changing instance locales or ma
     expect(french.tr(`@@other`)).toBe(`new`);
     update(acceptedPaths.map(file => file.includes(`assets/locales/fr-CA`) ? {default: {greeting: `Salut`}} : undefined));
     expect(french.tr(`@@greeting`)).toBe(`Salut`);
+    expect(computedGreeting.value).toBe(`Salut`);
     expect(english.tr(`@@greeting`)).toBe(`Hello`);
     expect(english.getLocale()).toBe(`en-US`);
     expect(french.getLocale()).toBe(`fr-CA`);

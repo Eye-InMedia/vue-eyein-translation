@@ -5,18 +5,13 @@ import * as vue from "vue";
 import * as translationRuntime from "../../src/runtime/js/translationRuntime.js";
 import * as localeLoader from "../../src/runtime/js/localeLoader.js";
 
-// Evaluate the runtime's real module body with controlled build placeholders.
-// Dependencies remain real; only the Vite-generated import map/environment vary.
-export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {}, assetsDir = `assets`, additionalLocalesDirs = [], hot, source: inputSource, imports = {}} = {}) {
-    const url = new URL(`../../src/runtime/js/_eTr.js`, import.meta.url);
-    const source = inputSource ?? fs.readFileSync(url, `utf8`);
+async function moduleBody(source, url, dependencies) {
     const code = new MagicString(source);
     const names = [], values = [];
     for (const node of parse(source, {sourceType: `module`}).program.body) {
         if (node.type === `ImportDeclaration`) {
             const resolved = node.source.value.startsWith(`.`) ? new URL(node.source.value, url).pathname : node.source.value;
-            const core = {vue, [new URL(`./translationRuntime.js`, url).pathname]: translationRuntime, [new URL(`./localeLoader.js`, url).pathname]: localeLoader};
-            const dependency = imports[resolved] ?? core[resolved] ?? await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
+            const dependency = dependencies[resolved] ?? await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
             for (const specifier of node.specifiers) {
                 names.push(specifier.local.name);
                 values.push(specifier.type === `ImportDefaultSpecifier` ? dependency.default : dependency[specifier.imported.name]);
@@ -28,6 +23,20 @@ export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {},
             code.remove(node.start, node.declaration.start);
         }
     }
+    return {code, names, values};
+}
+
+// Evaluate real module bodies with build placeholders and real Vue implementations.
+export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {}, assetsDir = `assets`, additionalLocalesDirs = [], hot, source: inputSource, imports = {}, vueImplementation} = {}) {
+    const url = new URL(`../../src/runtime/js/_eTr.js`, import.meta.url);
+    const factoryUrl = new URL(`./translationRuntime.js`, url);
+    const dependencies = {vue: vueImplementation ?? vue, [factoryUrl.pathname]: translationRuntime, [new URL(`./localeLoader.js`, url).pathname]: localeLoader, ...imports};
+    if (vueImplementation) {
+        const factory = await moduleBody(fs.readFileSync(factoryUrl, `utf8`), factoryUrl, dependencies);
+        dependencies[factoryUrl.pathname] = new Function(...factory.names, `${factory.code.toString()}\nreturn {createTranslationRuntime};`)(...factory.values);
+    }
+    const source = inputSource ?? fs.readFileSync(url, `utf8`);
+    const {code, names, values} = await moduleBody(source, url, dependencies);
     const body = code.toString().replaceAll(`import.meta.hot`, `hot`)
         .replace(`/*{locales}*/`, `locales = ${JSON.stringify(locales)};`)
         .replace(`/*{assetsDir}*/`, `assetsDir = ${JSON.stringify(assetsDir)};`)

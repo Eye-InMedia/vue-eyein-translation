@@ -43,6 +43,12 @@ reproduced by a failing test and corrected in one fix pass:
   checks preserve Vue's presence tracking; reserved-ID computed values update.
   The production Nuxt fixture also renders these IDs.
 
+An additional compatibility regression reproduced a stale computed translation
+on real Vue **2.7.16** after HMR dictionary replacement. Initial eager dictionaries
+are now assembled as one reactive catalog, so both Vue 2 and Vue 3 observe complete
+replacements. The actual Vue 2 runtime is a dev-only npm alias used by the test;
+no product dependency was added.
+
 One minor finding is deferred: repeated `useLocale()` calls can still allocate
 Nuxt cookie observers. Reusing one application-owned cookie ref is follow-up
 work; the locale-change controller itself remains singular per application.
@@ -60,7 +66,7 @@ payload state and startup with `pages: false` are checked.
 - Separate normal npm installation: Nuxt **4.5.2**, Nitro **2.13.4**, Node
   **22.23.3**. The same three production HTTP tests pass; this is real Nuxt 4,
   rather than Nuxt 3 with kit 4.
-- Full suite: **129 tests**, plus TypeScript declaration checks.
+- Full suite: **130 tests**, plus TypeScript declaration checks.
 - Lint, full tests and module build checked with available Node 18.20.8,
   20.20.2 and 22.23.3 runtimes. CI continues to cover 18/20/22.
 - Package validation includes a fresh module build and `npm publish --dry-run`;
