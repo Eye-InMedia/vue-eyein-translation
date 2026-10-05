@@ -296,7 +296,10 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
             localeTranslation[id] = translation;
 
             updatedLocales.add(locale);
-        } else if (localeTranslation && localeTranslation.hasOwnProperty(id) && (typeof localeTranslation[id] === `string` || localeTranslation[id].target || localeInlineTranslation)) {
+        } else if (localeTranslation && typeof localeTranslation[id] === `string`) {
+            // complete translation written as a plain string in the locale file, kept as is
+            translationFound = true;
+        } else if (localeTranslation && localeTranslation.hasOwnProperty(id) && (localeTranslation[id].target || localeInlineTranslation)) {
             // if complete translation found
             translationFound = true;
 
@@ -326,7 +329,7 @@ function createTranslationObjectString(ctx, translationStr, location, dataStr = 
             console.warn(`[Eye-In Translation] Missing translation ${locale} @@${fullId} for "${source}", ${location.replace(` at (`, `\nat (`)}`);
         }
 
-        if (localeTranslation && localeTranslation.hasOwnProperty(id)) {
+        if (localeTranslation && typeof localeTranslation[id] === `object`) {
             if (!localeTranslation[id].hasOwnProperty(`files`)) {
                 localeTranslation[id].files = {};
             }

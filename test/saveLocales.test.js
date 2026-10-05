@@ -1,7 +1,7 @@
-import {describe, it, expect, beforeEach, afterEach} from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {describe, it, expect, beforeEach, afterEach} from "vitest";
 import saveLocales from "../src/vite/saveLocales.js";
 
 const locales = [`en-US`, `fr-CA`];
@@ -59,5 +59,14 @@ describe(`saveLocales`, () => {
         await saveLocales(ctx);
 
         expect(readLocale(`fr-CA`).zzhello.target).toBe(`FR Hello`);
+    });
+
+    it(`keeps translations stored as plain strings`, async () => {
+        const ctx = createCtx({purgeOldTranslations: true});
+        ctx.translations[`fr-CA`].myid = `Salut`;
+
+        await saveLocales(ctx);
+
+        expect(readLocale(`fr-CA`).myid).toBe(`Salut`);
     });
 });

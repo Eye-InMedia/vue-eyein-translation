@@ -17,7 +17,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
         if (!ctx.hmr) {
             if (ctx.options.purgeOldTranslations) {
                 for (const translationId in ctx.translations[locale]) {
-                    if (!ctx.translations[locale][translationId].source) {
+                    if (isTranslationGroup(ctx.translations[locale][translationId])) {
                         // if it's a group of translations
                         const groupId = translationId;
                         for (const translationId in ctx.translations[locale][groupId]) {
@@ -51,7 +51,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
         const fingerprintArray = [];
         const localeTranslations = JSON.parse(JSON.stringify(ctx.translations[locale]));
         for (const translationId in localeTranslations) {
-            if (!localeTranslations[translationId].source) {
+            if (isTranslationGroup(localeTranslations[translationId])) {
                 const groupId = translationId;
                 for (const translationId in localeTranslations[groupId]) {
                     purgeTranslationObject(ctx, localeTranslations[groupId][translationId]);
@@ -165,6 +165,10 @@ async function autoTranslateLocale(ctx, locale) {
 }
 
 function purgeTranslationObject(ctx, translationObject) {
+    if (typeof translationObject !== `object` || translationObject === null) {
+        return;
+    }
+
     if (!ctx.hmr && translationObject.files) {
         translationObject.used = Object.keys(translationObject.files).length;
     }
@@ -174,4 +178,8 @@ function purgeTranslationObject(ctx, translationObject) {
     delete translationObject.meaning;
     delete translationObject.files;
     delete translationObject.found;
+}
+
+function isTranslationGroup(entry) {
+    return typeof entry === `object` && entry !== null && !entry.source;
 }
