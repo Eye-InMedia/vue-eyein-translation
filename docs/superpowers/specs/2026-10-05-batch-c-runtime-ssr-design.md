@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 Baseline: 6.3.1, commit `46f7b0f`
-Status: proposed approach approved; written specification pending user review.
+Status: written specification approved by the user; implementation plan pending review.
 
 ## Intent and success criteria
 
