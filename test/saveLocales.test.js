@@ -1,6 +1,8 @@
+import {execFileSync} from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {fileURLToPath} from "node:url";
 import {describe, it, expect, beforeEach, afterEach} from "vitest";
 import saveLocales from "../src/vite/saveLocales.js";
 
@@ -69,5 +71,21 @@ describe(`saveLocales`, () => {
         await saveLocales(ctx);
 
         expect(readLocale(`fr-CA`).myid).toBe(`Salut`);
+    });
+
+    it(`sorts locale files the same way whatever the system locale`, () => {
+        const saveLocalesPath = fileURLToPath(new URL(`../src/vite/saveLocales.js`, import.meta.url));
+        const script = `
+            import saveLocales from ${JSON.stringify(saveLocalesPath)};
+            const translations = {zz1: {source: \`z\`}, zz2: {source: \`ä\`}, zz3: {source: \`aa\`}, zz4: {source: \`å\`}};
+            await saveLocales({options: {locales: [\`en-US\`], assetsDir: \`assets\`, autoTranslate: {}}, rootDir: process.cwd(), translations: {"en-US": translations}, hmr: false});
+            process.stdout.write(Object.keys(JSON.parse((await import(\`node:fs\`)).readFileSync(\`assets/locales/en-US.locale\`, \`utf8\`))).join());
+        `;
+        const order = (systemLocale) => {
+            fs.rmSync(`assets/locales/en-US.locale`, {force: true});
+            return execFileSync(process.execPath, [`--input-type=module`, `-e`, script], {env: {...process.env, LC_ALL: systemLocale}, encoding: `utf8`});
+        };
+
+        expect(order(`sv_SE.UTF-8`)).toBe(order(`en_US.UTF-8`));
     });
 });

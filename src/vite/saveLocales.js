@@ -2,6 +2,9 @@ import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
 
+// Fixed collation so that locale files are sorted the same way on every machine
+const collator = new Intl.Collator(`en`);
+
 export default async function saveLocales(ctx, localesToSave = null) {
     if (ctx.options.debug) {
         console.log(`[Eye-In Translation] Saving translation files...`);
@@ -78,13 +81,13 @@ export default async function saveLocales(ctx, localesToSave = null) {
                     return 1;
                 }
 
-                return aSource.localeCompare(bSource);
+                return collator.compare(aSource, bSource);
             } else if (aKey.startsWith(`zz`)) {
                 return 1;
             } else if (bKey.startsWith(`zz`)) {
                 return -1;
             } else {
-                return aKey.localeCompare(bKey);
+                return collator.compare(aKey, bKey);
             }
         });
 
