@@ -14,7 +14,6 @@ export default defineNuxtModule({
         inlineLocales: `en-US`,
         assetsDir: `assets`,
         additionalLocalesDirs: [],
-        nuxt: true
     },
     setup(options) {
         const {resolve} = createResolver(import.meta.url);
