@@ -20,7 +20,7 @@ export default createConfigForNuxt({
         ],
     },
 }).append({
-    ignores: [`test/fixtures/**`],
+    ignores: [`test/fixtures/**`, `.superpowers/**`],
 }, {
     rules: {
         '@stylistic/object-curly-spacing': [`error`, `never`],

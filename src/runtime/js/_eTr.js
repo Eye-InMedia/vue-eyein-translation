@@ -2,6 +2,7 @@ import {computed, reactive, ref} from "vue";
 import pluralize from "./pluralize.js";
 import replaceDataBindings from "./replaceDataBindings.js";
 import {applyFilter} from "./filters.js";
+import {createLocaleLoader} from "./localeLoader.js";
 import {nearestLocale, detectBrowserLocale} from "./localeSelection.js";
 
 let localeFilesPromises = {};
@@ -41,47 +42,10 @@ if (import.meta.hot) {
     });
 }
 
+const loadLocale = createLocaleLoader({locales, translations, localeFilesPromises, assetsDir, additionalLocalesDirs});
+
 const _eTr = {
-    async loadLocale(locale) {
-        try {
-            if (!locale) {
-                throw new Error(`Cannot load locale "${locale}"`);
-            }
-
-            if (translations.hasOwnProperty(locale)) {
-                // locale already loaded
-                return;
-            }
-
-            for (const url in localeFilesPromises) {
-                if (!url.includes(`${locale}.locale`)) {
-                    continue;
-                }
-
-                let isAdditionalLocale = false;
-                for (const localesDir of additionalLocalesDirs) {
-                    if (url.startsWith(`/` + localesDir)) {
-                        isAdditionalLocale = true;
-                        break;
-                    }
-                }
-
-                if (!isAdditionalLocale && !url.startsWith(`/` + assetsDir)) {
-                    continue;
-                }
-
-                const localeFile = await localeFilesPromises[url]();
-
-                if (isAdditionalLocale) {
-                    translations[locale] = {...localeFile, ...translations[locale]};
-                } else {
-                    translations[locale] = {...translations[locale], ...localeFile};
-                }
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    },
+    loadLocale,
 
     getLocaleOptions(locale) {
         if (!translations.hasOwnProperty(locale)) {
