@@ -28,7 +28,12 @@ export default function viteEyeinTranslation(options = {}) {
             additionalTranslations = result.additionalTranslations;
             errors = [];
         },
-        async buildEnd() {
+        async buildEnd(error) {
+            if (error) {
+                // Files that were not transformed would look unused: do not save nor purge locales
+                return;
+            }
+
             if (errors.length > 0) {
                 console.error(errors.map(e => e.stack).join(`\n`));
                 throw new AggregateError(errors, `[Eye-In Translation] ${errors.length} error(s) found during build`);
