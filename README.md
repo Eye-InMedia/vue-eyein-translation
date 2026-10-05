@@ -265,18 +265,44 @@ const jsTranslationComputed = trComputed(jsTranslationObject);
 
 #### Vue
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
-- `trComputed(translationObject, data = null)`: Returns a computed of the translation with current locale, value change reactively with locale change
+- `trComputed(translationObject, data = null, locale = null)`: Returns a computed translation, reactive to the current locale unless an explicit locale is supplied
 - `getLocales()`: Returns the list of available locales
 - `getLocale()`: Returns the current locale in use
-- `setLocale(locale)`: Change the current locale
+- `setLocale(locale)`: Requests a locale change and returns `void`. Background loading failures are reported and retain the previous active locale.
+- `loadLocale(locale)`: Returns a promise that resolves after the complete dictionary is loaded. Unsupported locales, missing assets and import failures reject; failed loads can be retried.
 - `staticTr(translationInput)`: Tells the compiler to generate a translation entry inside
 - `staticTrComputed(translationInput)`: Tells the compiler to generate a translation entry and use `trComputed` as return value
 
 #### Nuxt composables
 - `tr(translationObject, data = null, locale = null)`: Returns the translation with the given locale (current locale by default)
 - `getLocales()`: Returns the list of available locales
-- `useLocale()`: Returns the current locale as a cookie ref that can be changed to load other locales
+- `useLocale()`: Returns the shared requested-locale state ref. Assign a supported locale to load and activate it; successful changes update the locale cookie.
 - `staticTr()`: Tells the compiler to generate a translation entry inside
+
+### Nuxt locale state and SSR
+
+Each Nuxt application has its own active locale. Concurrent server requests share
+complete translation dictionaries, while components, directives and composables
+use their application's runtime. The standalone Vue 2/3 plugin keeps its existing
+shared runtime.
+
+Initialization uses a valid `useState('locale')` value first (including the SSR
+payload during hydration), then a supported locale cookie, then `Accept-Language`
+on the server or navigator preferences on the client, then the first configured
+locale. Tags are matched case-insensitively and by complete language subtags;
+HTTP quality weights and zero-weight exclusions are respected. Standalone browser
+detection also tolerates inaccessible local storage.
+
+Route middleware can assign `useLocale().value` to select the route's language.
+Navigation waits for that selection's dictionary before resolving. A newer change
+wins over an older pending load. A failed change restores the last active state
+and cookie, reports its error, and rejects an awaited navigation/startup check.
+The plugin also initializes applications without pages.
+
+The `locale` cookie uses `Path=/` and `SameSite=Strict`; it is writable over HTTP
+and `Secure` over HTTPS, including an effective forwarded HTTPS request URL.
+Only successful current selections are persisted. The Nuxt payload contains the
+locale string; runtime instances and pending promises stay outside it.
 
 ### Available plugin components
 
