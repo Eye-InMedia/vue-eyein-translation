@@ -1,41 +1,29 @@
 import _eTr from "../js/_eTr.js";
-import {useRequestHeaders, useCookie, useState} from '#app';
+import {matchSupportedLocale, nearestLocale, negotiateAcceptLanguage} from "../js/localeSelection.js";
+import {localeCookieOptions} from "../js/runtimeContext.js";
+import {useRequestHeaders, useCookie, useState, useRequestURL} from '#app';
 
-/**
- *
- * @returns {import("vue").Ref<string>} current locale
- */
+/** @returns {import("vue").Ref<string>} current requested locale */
 export default function useLocale() {
-    const localeState = useState(`locale`);
-    const localeCookie = useCookie(`locale`, {secure: true, sameSite: true});
-
-    if (!localeState.value) {
-        localeState.value = localeCookie.value;
+    const state = useState(`locale`);
+    const locales = _eTr.getLocales();
+    const cookie = useCookie(`locale`, localeCookieOptions(useRequestURL({xForwardedProto: true})));
+    const existing = matchSupportedLocale(state.value, locales);
+    if (existing) {
+        state.value = existing;
+        return state;
     }
-
-    if (localeState.value) {
-        return localeState;
-    }
-
-    let locale;
-    if (import.meta.server) {
-        const headers = useRequestHeaders([`accept-language`]);
-        if (headers[`accept-language`]) {
-            const navigatorLocales = headers[`accept-language`]
-                .split(`,`)
-                .map((weightedLocale) => {
-                    return weightedLocale.split(`;`).shift();
-                });
-            locale = _eTr.getNearestLocale(navigatorLocales);
-        } else {
-            locale = _eTr.getDefaultLocale();
+    const stored = matchSupportedLocale(cookie.value, locales);
+    if (stored) state.value = stored;
+    else if (import.meta.server) state.value = negotiateAcceptLanguage(useRequestHeaders([`accept-language`])[`accept-language`], locales);
+    else {
+        let preferences = [];
+        try {
+            preferences = [...(globalThis.navigator?.languages || []), globalThis.navigator?.language];
+        } catch {
+            // Navigator can be unavailable during client-only startup.
         }
-    } else {
-        locale = _eTr.getNearestLocale(navigator.languages);
+        state.value = nearestLocale(preferences, locales);
     }
-
-    localeState.value = locale;
-    localeCookie.value = locale;
-
-    return localeState;
+    return state;
 }
