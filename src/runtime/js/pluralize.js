@@ -50,7 +50,7 @@ export default function pluralize(str, data, locale) {
                     if (choices.length > 4) {
                         choice = choices[4];
                     } else {
-                        choices.at(-1);
+                        choice = choices.at(-1);
                     }
                     break;
                 default:
