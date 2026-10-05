@@ -6,10 +6,11 @@
     "license": "BSD-3-CLAUSE",
     "type": "module",
     "main": "./dist/module.cjs",
-    "types": "./dist/types.d.ts",
+    "types": "./types/module.d.ts",
     "files": [
         "dist",
         "src",
+        "types",
         "vue2.js",
         "vue3.js",
         "vite-plugin-vue-eyein-translation.js"
@@ -20,7 +21,7 @@
         "dev:prepare": "nuxt-module-build build --stub && nuxt-module-build prepare && nuxi prepare playground",
         "build": "nuxt-module-build build",
         "lint": "eslint .",
-        "test": "vitest run",
+        "test": "vitest run && tsc -p test/types",
         "prepublishOnly": "npm run lint && npm test && npm run build",
         "release": "npm publish",
         "release:beta": "npm publish --tag beta"
@@ -68,12 +69,21 @@
     },
     "exports": {
         ".": {
-            "types": "./dist/types.d.ts",
+            "types": "./types/module.d.ts",
             "import": "./dist/module.mjs",
             "require": "./dist/module.cjs"
         },
-        "./vue2.js": "./vue2.js",
-        "./vue3.js": "./vue3.js",
-        "./vite-plugin-vue-eyein-translation.js": "./vite-plugin-vue-eyein-translation.js"
+        "./vue2.js": {
+            "types": "./types/vue2.d.ts",
+            "default": "./vue2.js"
+        },
+        "./vue3.js": {
+            "types": "./types/vue3.d.ts",
+            "default": "./vue3.js"
+        },
+        "./vite-plugin-vue-eyein-translation.js": {
+            "types": "./types/vite-plugin.d.ts",
+            "default": "./vite-plugin-vue-eyein-translation.js"
+        }
     }
 }

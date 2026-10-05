@@ -42,6 +42,12 @@ export default createConfigForNuxt({
         'vue/singleline-html-element-content-newline': `off`,
     },
 }, {
+    files: [`**/*.d.ts`],
+    rules: {
+        // Parameter names document signatures in declaration files, typescript-eslint handles them
+        'no-unused-vars': `off`,
+    },
+}, {
     files: [`src/runtime/composables/staticTr*.js`],
     rules: {
         // These composables are replaced at build time, the JSDoc documents the compiled call
