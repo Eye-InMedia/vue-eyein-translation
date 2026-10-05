@@ -263,10 +263,6 @@ function transformScript(ctx, rootNode) {
 }
 
 function injectTrComposable(ctx, rootNode, ast, offset) {
-    if (ctx.trInjected) {
-        return;
-    }
-    ctx.trInjected = true;
     if (!(`setup` in rootNode.attributes)) {
         return;
     }
@@ -294,8 +290,13 @@ function injectTrComposable(ctx, rootNode, ast, offset) {
 
     let importText = ``;
     if (!injectName) {
-        injectName = identifiers.has(`inject`) ? `__eyeinInject` : `inject`;
-        while (identifiers.has(injectName)) {
+        const bindsInject = ast.program.body.some(node =>
+            (node.type === `ImportDeclaration` && node.specifiers.some(specifier => specifier.local.name === `inject`))
+            || (node.type === `VariableDeclaration` && node.declarations.some(declaration => declaration.id.name === `inject`))
+            || ((node.type === `FunctionDeclaration` || node.type === `ClassDeclaration`) && node.id?.name === `inject`)
+        );
+        injectName = bindsInject ? `__eyeinInject` : `inject`;
+        while (injectName !== `inject` && identifiers.has(injectName)) {
             injectName += `_`;
         }
         const specifier = injectName === `inject` ? `inject` : `inject as ${injectName}`;

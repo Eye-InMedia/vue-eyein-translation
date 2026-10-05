@@ -86,3 +86,26 @@ describe(`script injection`, () => {
         expectValidScripts(code);
     });
 });
+
+describe(`independent script blocks`, () => {
+    it(`transforms both normal and setup scripts and injects into setup`, () => {
+        const {code} = transform(`<script>\nexport default {methods: {title() { return this.staticTr("Hello"); }}};\n</script>\n<script setup lang="ts">\nimport type {Ref} from "vue";\nconst title = staticTr("Hello");\n</script>`);
+        const scripts = parseHTML(code).querySelectorAll(`script`);
+        expect(scripts[0].innerHTML).toContain(`this._eTr.tr(`);
+        expect(scripts[1].innerHTML).toContain(`const _eTr = inject('_eTr');`);
+        expect(code).not.toContain(`staticTr(`);
+        expectValidScripts(code);
+    });
+
+    it(`does not let an inject call for another variable suppress the binding`, () => {
+        const {code} = transform(`<script setup>\nconst other = inject("_eTr");\nconst title = staticTr("Hello");\n</script>`);
+        expect(code).toContain(`const _eTr = inject('_eTr');`);
+        expectValidScripts(code);
+    });
+
+    it(`preserves an existing _eTr binding`, () => {
+        const {code} = transform(`<script setup>\nimport {inject} from "vue";\nconst _eTr = inject("_eTr");\nconst title = staticTr("Hello");\n</script>`);
+        expect(code.match(/const _eTr/g)).toHaveLength(1);
+        expectValidScripts(code);
+    });
+});
