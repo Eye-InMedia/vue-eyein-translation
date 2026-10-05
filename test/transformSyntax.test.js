@@ -109,3 +109,30 @@ describe(`independent script blocks`, () => {
         expectValidScripts(code);
     });
 });
+
+describe(`template expression boundaries`, () => {
+    it(`compiles interpolations and bound attributes without a script block`, () => {
+        const {code} = transform(`<template><div :title="staticTr('Hello', {name: fmt(n)})">{{ staticTr('World') }}</div></template>`);
+        expect(code).not.toContain(`staticTr(`);
+        expect(code.match(/_eTr\.tr\(/g)).toHaveLength(2);
+        expect(code).toContain(`data: {name: fmt(n)}`);
+    });
+
+    it(`ignores static text, template comments and styles`, () => {
+        const original = `<template><!-- staticTr("Comment") --><p>staticTr("Text")</p><div title="staticTr('Attribute')" /></template><script setup>\nconst x = 1;\n</script><style>.foo::after {content: 'staticTr("CSS")';}</style>`;
+        expect(transform(original).code).toBe(original);
+    });
+
+    it(`parses interpolation strings containing closing braces`, () => {
+        const {code} = transform(`<template><p>{{ staticTr('Hello }} world') }}</p></template>`);
+        expect(code).not.toContain(`staticTr(`);
+        expect(code).toContain(`_eTr.tr(`);
+    });
+
+    it(`compiles calls in a template without injecting a script variable`, () => {
+        const {code} = transform(`<template>{{ staticTr('Hello') }}</template><script setup>\nconst x = 1;\n</script>`);
+        expect(code).toContain(`_eTr.tr(`);
+        expect(code).not.toContain(`const _eTr`);
+        expectValidScripts(code);
+    });
+});

@@ -1,6 +1,6 @@
 import {parse} from "node-html-parser";
 import MagicString from "magic-string";
-import {parse as parseScript} from "@babel/parser";
+import {parse as parseScript, parseExpression} from "@babel/parser";
 import {createTranslationId, debounce, findLineNumber} from "./viteUtils.js";
 import saveLocales from "./saveLocales.js";
 
@@ -51,6 +51,9 @@ export default function transformVueFile(ctx) {
 
 function transformTemplate(ctx, rootNode) {
     if (!rootNode.tagName) {
+        if (rootNode.nodeType === 3) {
+            transformInterpolations(ctx, rootNode);
+        }
         return;
     }
 
@@ -59,10 +62,74 @@ function transformTemplate(ctx, rootNode) {
         return;
     } else {
         transformTranslationAttributes(ctx, rootNode);
+        transformBoundExpressions(ctx, rootNode);
     }
 
     for (const childNode of rootNode.childNodes) {
         transformTemplate(ctx, childNode);
+    }
+}
+
+// Find the end of the opening tag without treating `>` inside a quoted value as markup.
+function openingTag(node) {
+    const html = node.outerHTML;
+    let quote = null;
+    for (let i = 0; i < html.length; i++) {
+        if (quote) {
+            if (html[i] === quote) {
+                quote = null;
+            }
+        } else if (html[i] === `"` || html[i] === `'`) {
+            quote = html[i];
+        } else if (html[i] === `>`) {
+            return html.slice(0, i + 1);
+        }
+    }
+    return html;
+}
+
+function templateAttributes(node) {
+    return [...openingTag(node).matchAll(/\s+([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/dg)];
+}
+
+function transformBoundExpressions(ctx, node) {
+    for (const match of templateAttributes(node)) {
+        const name = match[1];
+        if (!(name.startsWith(`:`) || name.startsWith(`@`) || name.startsWith(`v-`)) || name.startsWith(`v-t`)) {
+            continue;
+        }
+        const valueIndex = match[2] !== undefined ? 2 : match[3] !== undefined ? 3 : 4;
+        const expression = match[valueIndex];
+        if (!expression?.includes(`staticTr`)) {
+            continue;
+        }
+        const ast = name.startsWith(`@`) || name.startsWith(`v-on:`)
+            ? parseScript(expression, {sourceType: `module`, plugins: [`typescript`], allowReturnOutsideFunction: true})
+            : parseExpression(expression, {plugins: [`typescript`]});
+        transformStaticCalls(ctx, ast, node.range[0] + match.indices[valueIndex][0]);
+    }
+}
+
+function transformInterpolations(ctx, node) {
+    const text = ctx.src.original.slice(...node.range);
+    let cursor = 0;
+    while ((cursor = text.indexOf(`{{`, cursor)) >= 0) {
+        const start = cursor + 2;
+        let end = text.indexOf(`}}`, start);
+        let ast;
+        while (end >= 0) {
+            try {
+                ast = parseExpression(text.slice(start, end), {plugins: [`typescript`]});
+                break;
+            } catch {
+                end = text.indexOf(`}}`, end + 2);
+            }
+        }
+        if (!ast) {
+            break;
+        }
+        transformStaticCalls(ctx, ast, node.range[0] + start);
+        cursor = end + 2;
     }
 }
 
