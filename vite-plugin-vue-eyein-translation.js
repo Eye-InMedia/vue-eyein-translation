@@ -10,6 +10,7 @@ export default function viteEyeinTranslation(options = {}) {
     options = {...defaultOptions, ...options};
 
     let config;
+    let rootDir;
     let translations;
     let additionalTranslations;
     let hmr = false;
@@ -21,9 +22,10 @@ export default function viteEyeinTranslation(options = {}) {
         configResolved(resolvedConfig) {
             config = resolvedConfig;
             hmr = config.command === `serve`;
+            rootDir = config.root.replace(/\\/g, `/`);
         },
         buildStart() {
-            const result = loadLocales({options});
+            const result = loadLocales({options, rootDir});
             translations = result.translations;
             additionalTranslations = result.additionalTranslations;
             errors = [];
@@ -39,7 +41,7 @@ export default function viteEyeinTranslation(options = {}) {
                 throw new AggregateError(errors, `[Eye-In Translation] ${errors.length} error(s) found during build`);
             }
 
-            await saveLocales({options, translations, additionalTranslations, hmr});
+            await saveLocales({options, rootDir, translations, additionalTranslations, hmr});
         },
         transform(code, fileId) {
             /**
@@ -49,7 +51,7 @@ export default function viteEyeinTranslation(options = {}) {
             const [filePath, query = ``] = fileId.split(`?`);
             if (/\/_eTr\.js/.test(fileId)) {
                 src = new MagicString(code);
-                transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
+                transformVueEyeinTranslationFile({options, rootDir, translations, additionalTranslations, fileId, src, hmr, errors});
             } else if (/\.vue$/.test(filePath) && !new URLSearchParams(query).has(`vue`) && !filePath.includes(`/node_modules/`)) {
                 // Every request containing the full SFC must be transformed, not only `file.vue`:
                 // Nuxt also imports pages as `file.vue?macro=true`, and @vitejs/plugin-vue caches descriptors
@@ -57,7 +59,7 @@ export default function viteEyeinTranslation(options = {}) {
                 // to compile `file.vue?vue&type=script` sub-requests, leaving staticTr() calls uncompiled at random.
                 // `?vue&type=...` sub-requests are skipped because they only contain an already transformed block.
                 src = new MagicString(code);
-                transformVueFile({options, translations, additionalTranslations, fileId: filePath, src, hmr, errors});
+                transformVueFile({options, rootDir, translations, additionalTranslations, fileId: filePath, src, hmr, errors});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
                 src = new MagicString(code);
                 transformLocaleFile({options, fileId, src, hmr, errors});

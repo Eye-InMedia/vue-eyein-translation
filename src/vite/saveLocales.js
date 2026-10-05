@@ -45,8 +45,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
             console.log(`[Eye-In Translation] Skipping purge and auto translation in dev mode...`);
         }
 
-        const rootDir = process.cwd().replace(/\\/g, `/`);
-        const localePath = path.join(rootDir, ctx.options.assetsDir, `locales/${locale}.locale`);
+        const localePath = path.join(ctx.rootDir, ctx.options.assetsDir, `locales/${locale}.locale`);
 
         const fingerprintArray = [];
         const localeTranslations = JSON.parse(JSON.stringify(ctx.translations[locale]));

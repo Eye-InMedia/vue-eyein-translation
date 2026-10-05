@@ -4,8 +4,6 @@ import saveLocales from "./saveLocales.js";
 
 const STATIC_TR_CALL_REGEX = /(this\.)?staticTr(Computed)?\s*\(\s*([`'"])((?:\\.|(?!\3)[\s\S])+?)\3\s*(?:,\s*([\s\S]*?\S[\s\S]*?))?\s*,?\s*\)/dg;
 
-const rootDir = process.cwd().replace(/\\/g, `/`);
-
 let updatedLocales = new Set();
 const hmrLocalesUpdate = debounce((ctx) => {
     if (updatedLocales.size === 0) {
@@ -20,7 +18,7 @@ export default function transformVueFile(ctx) {
         return false;
     }
 
-    ctx.relativePath = ctx.fileId.replace(rootDir, ``);
+    ctx.relativePath = ctx.fileId.replace(ctx.rootDir, ``);
     ctx.currentFileTranslations = {};
 
     for (const locale of ctx.options.locales) {

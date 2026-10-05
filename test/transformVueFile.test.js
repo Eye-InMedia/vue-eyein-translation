@@ -8,6 +8,7 @@ function transform(code, translations = null) {
         options: {locales, inlineLocales: `en-US||fr-CA`, warnMissingTranslations: false},
         translations: translations || Object.fromEntries(locales.map(locale => [locale, {}])),
         additionalTranslations: Object.fromEntries(locales.map(locale => [locale, {}])),
+        rootDir: `/project`,
         fileId: `/project/components/Test.vue`,
         src: new MagicString(code),
         hmr: false,

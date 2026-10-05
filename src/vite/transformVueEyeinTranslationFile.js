@@ -1,8 +1,6 @@
 import path from "node:path";
 import fs from "node:fs";
 
-const rootDir = process.cwd();
-
 export default function transformVueEyeinTranslationFile(ctx) {
     ctx.src.replace(`/*{assetsDir}*/`, `assetsDir = "${ctx.options.assetsDir}";`);
     ctx.src.replace(`/*{locales}*/`, `locales = ${JSON.stringify(ctx.options.locales)};`);
@@ -17,9 +15,9 @@ export default function transformVueEyeinTranslationFile(ctx) {
         let importsCode = ``;
         let code = ``;
         for (const locale of ctx.options.locales) {
-            const localeAbsolutePath = path.join(rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`);
+            const localeAbsolutePath = path.join(ctx.rootDir, ctx.options.assetsDir, `locales`, `${locale}.locale`);
             const localeLowercase = locale.replace(/-/g, ``).toLowerCase();
-            const {importName, importPath} = getImportPath(ctx.fileId, localeAbsolutePath, localeLowercase);
+            const {importName, importPath} = getImportPath(ctx.rootDir, ctx.fileId, localeAbsolutePath, localeLowercase);
 
             importsPaths.push(importPath);
             importsLocale.push(locale);
@@ -28,10 +26,10 @@ export default function transformVueEyeinTranslationFile(ctx) {
             code += `translations["${locale}"] = reactive(${importName});\n`;
 
             for (const additionalDir of ctx.options.additionalLocalesDirs) {
-                const additionalLocaleAbsolutePath = path.join(rootDir, additionalDir, `${locale}.locale`);
+                const additionalLocaleAbsolutePath = path.join(ctx.rootDir, additionalDir, `${locale}.locale`);
 
                 if (fs.existsSync(additionalLocaleAbsolutePath)) {
-                    const {importName, importPath} = getImportPath(ctx.fileId, additionalLocaleAbsolutePath, localeLowercase);
+                    const {importName, importPath} = getImportPath(ctx.rootDir, ctx.fileId, additionalLocaleAbsolutePath, localeLowercase);
 
                     importsPaths.push(importPath);
                     importsLocale.push(locale);
@@ -51,7 +49,7 @@ export default function transformVueEyeinTranslationFile(ctx) {
     }
 }
 
-function getImportPath(currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {
+function getImportPath(rootDir, currentFileAbsolutePath, fileToImportAbsolutePath, importNamePrefix) {
     const currentDirAbsolutePath = path.dirname(currentFileAbsolutePath);
     let importPath = path.relative(currentDirAbsolutePath, fileToImportAbsolutePath).replace(/\\/g, `/`);
     if (!importPath.startsWith(`../`)) {

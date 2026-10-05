@@ -13,6 +13,7 @@ function createCtx(options = {}) {
             "en-US": {zzhello: {source: `Hello`, target: `Hello`}},
             "fr-CA": {zzhello: {source: `Hello`, target: `Bonjour`}}
         },
+        rootDir: process.cwd(),
         hmr: false
     };
 }

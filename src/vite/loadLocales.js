@@ -9,7 +9,7 @@ export default function loadLocales(ctx) {
     let translations = {};
     let additionalTranslations = {};
 
-    const rootDir = process.cwd().replace(/\\/g, `/`);
+    const rootDir = ctx.rootDir;
 
     if (!fs.existsSync(path.join(rootDir, ctx.options.assetsDir, `locales`))) {
         console.log(`[Eye-In Translation] Creating locales directory: ${ctx.options.assetsDir}/locales...`);
