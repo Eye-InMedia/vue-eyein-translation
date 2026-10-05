@@ -3,7 +3,7 @@ import {useRequestHeaders, useCookie, useState} from '#app';
 
 /**
  *
- * @returns {Ref<string>} current locale
+ * @returns {import("vue").Ref<string>} current locale
  */
 export default function useLocale() {
     const localeState = useState(`locale`);
