@@ -90,7 +90,7 @@ export default async function saveLocales(ctx, localesToSave = null) {
         });
 
         const ordered = Object.fromEntries(entries);
-        ordered.$fingerprint = crypto.createHash(`md5`).update(fingerprintArray.toSorted().join(`#`)).digest(`hex`);
+        ordered.$fingerprint = crypto.createHash(`md5`).update([...fingerprintArray].sort().join(`#`)).digest(`hex`);
 
         if (fs.existsSync(localePath)) {
             const oldLocaleFileContent = JSON.parse(fs.readFileSync(localePath, {encoding: `utf8`}));
