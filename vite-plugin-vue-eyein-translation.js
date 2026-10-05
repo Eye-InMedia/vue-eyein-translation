@@ -41,12 +41,18 @@ export default function viteEyeinTranslation(options = {}) {
              * @type {MagicString|null}
              */
             let src = null;
+            const [filePath, query = ``] = fileId.split(`?`);
             if (/\/_eTr\.js/.test(fileId)) {
                 src = new MagicString(code);
                 transformVueEyeinTranslationFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
-            } else if (/\.vue$/.test(fileId) && !fileId.includes(`/node_modules/`)) {
+            } else if (/\.vue$/.test(filePath) && !new URLSearchParams(query).has(`vue`) && !filePath.includes(`/node_modules/`)) {
+                // Every request containing the full SFC must be transformed, not only `file.vue`:
+                // Nuxt also imports pages as `file.vue?macro=true`, and @vitejs/plugin-vue caches descriptors
+                // by file path regardless of the query. An untransformed `?macro=true` descriptor can then be used
+                // to compile `file.vue?vue&type=script` sub-requests, leaving staticTr() calls uncompiled at random.
+                // `?vue&type=...` sub-requests are skipped because they only contain an already transformed block.
                 src = new MagicString(code);
-                transformVueFile({options, translations, additionalTranslations, fileId, src, hmr, errors});
+                transformVueFile({options, translations, additionalTranslations, fileId: filePath, src, hmr, errors});
             } else if (/\/locales\/.+\.locale/.test(fileId)) {
                 src = new MagicString(code);
                 transformLocaleFile({options, fileId, src, hmr, errors});
