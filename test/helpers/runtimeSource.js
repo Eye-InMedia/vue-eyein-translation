@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import {parse} from "@babel/parser";
 import MagicString from "magic-string";
+import * as vue from "vue";
+import * as translationRuntime from "../../src/runtime/js/translationRuntime.js";
+import * as localeLoader from "../../src/runtime/js/localeLoader.js";
 
 // Evaluate the runtime's real module body with controlled build placeholders.
 // Dependencies remain real; only the Vite-generated import map/environment vary.
@@ -12,7 +15,8 @@ export async function runtimeSource({locales = [`en-US`, `fr-CA`], loaders = {},
     for (const node of parse(source, {sourceType: `module`}).program.body) {
         if (node.type === `ImportDeclaration`) {
             const resolved = node.source.value.startsWith(`.`) ? new URL(node.source.value, url).pathname : node.source.value;
-            const dependency = imports[resolved] ?? await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
+            const core = {vue, [new URL(`./translationRuntime.js`, url).pathname]: translationRuntime, [new URL(`./localeLoader.js`, url).pathname]: localeLoader};
+            const dependency = imports[resolved] ?? core[resolved] ?? await import(node.source.value.startsWith(`.`) ? new URL(node.source.value, url).href : node.source.value);
             for (const specifier of node.specifiers) {
                 names.push(specifier.local.name);
                 values.push(specifier.type === `ImportDefaultSpecifier` ? dependency.default : dependency[specifier.imported.name]);
